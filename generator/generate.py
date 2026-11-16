@@ -22,6 +22,8 @@ Source quirks injected on purpose (handled in the staging layer):
   * a few playback events with negative or missing watch time
   * playback timestamps arrive as ISO-8601 strings
 
+Web analytics in the shape of the GA4 BigQuery export is built in generator/ga4.py.
+
 Usage:
     python generator/generate.py --out data/raw --seed 42
 """
@@ -36,6 +38,9 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import pyarrow.parquet as pq
+
+from ga4 import build_ga4_events
 
 START = dt.date(2024, 1, 1)
 END = dt.date(2026, 10, 31)  # last day with data; "as of" is END + 1 day 00:00 UTC
@@ -426,6 +431,7 @@ def main() -> None:
     plans, plan_prices = build_plans()
     fx = build_fx(rng)
     assignments = pd.DataFrame(sink.assignments)
+    ga4_events = build_ga4_events(customers, subscriptions, plan_prices, MARKETS, END, args.seed)
     customers, playback, payments = inject_quirks(customers, playback, payments, rng)
 
     tables = {
@@ -442,6 +448,8 @@ def main() -> None:
     for name, df in tables.items():
         df.to_parquet(args.out / f"{name}.parquet", index=False)
         print(f"{name:28s} {len(df):>10,d} rows")
+    pq.write_table(ga4_events, args.out / "ga4_events.parquet")
+    print(f"{'ga4_events':28s} {ga4_events.num_rows:>10,d} rows")
 
 
 if __name__ == "__main__":
