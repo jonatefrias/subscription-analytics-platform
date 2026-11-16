@@ -1,0 +1,34 @@
+name: dbt CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      DBT_TARGET: ci
+      DBT_PROFILES_DIR: .
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Generate a small synthetic dataset
+        run: python generator/generate.py --out data/raw --scale 0.2 --seed 7
+
+      - name: dbt deps
+        working-directory: transform
+        run: dbt deps
+
+      - name: dbt build (models, seeds, data tests, unit tests, contracts)
+        working-directory: transform
+        run: dbt build --fail-fast

@@ -1,0 +1,9 @@
+version: 2
+seeds:
+  - name: big_match_days
+    description: Business calendar of marquee matches, maintained by the content team.
+    config:
+      column_types: {match_date: date}
+    columns:
+      - name: match_date
+        data_tests: [unique, not_null]

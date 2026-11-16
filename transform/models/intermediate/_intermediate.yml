@@ -1,0 +1,43 @@
+version: 2
+
+models:
+  - name: int_months
+    description: Month spine for reporting; snapshot_at is the first instant of the next month.
+    columns:
+      - name: month_start
+        data_tests: [unique, not_null]
+
+  - name: int_fx__constant_rates
+    columns:
+      - name: currency_code
+        data_tests: [unique, not_null]
+
+  - name: int_payments__converted
+    columns:
+      - name: amount_usd
+        description: Null would mean a missing FX rate for the billing day.
+        data_tests: [not_null]
+      - name: amount_usd_constant_fx
+        data_tests: [not_null]
+
+  - name: int_subscriptions__lifecycle
+    columns:
+      - name: subscription_id
+        data_tests: [unique, not_null]
+      - name: status_as_of
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [active, trialing, non_renewing, ended]
+
+  - name: int_mrr__subscription_months
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [subscription_id, month_start]
+
+  - name: int_mrr__customer_months
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [customer_id, month_start]
