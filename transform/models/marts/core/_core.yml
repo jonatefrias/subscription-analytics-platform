@@ -1,0 +1,61 @@
+version: 2
+
+models:
+  - name: dim_date
+    description: Calendar with season and big-match flags.
+    columns:
+      - name: date_day
+        data_tests: [unique, not_null]
+
+  - name: dim_plans
+    description: Plans with the list price in force at the as-of date.
+    columns:
+      - name: plan_id
+        data_tests: [unique, not_null]
+
+  - name: dim_customers
+    description: >
+      One row per customer with acquisition attributes, trial outcome and lifetime value.
+      `status_as_of` is the commercial status at the reporting cut-off.
+    config:
+      contract: {enforced: true}
+    columns:
+      - name: customer_id
+        data_type: varchar
+        constraints: [{type: not_null}, {type: primary_key}]
+        data_tests: [unique, not_null]
+      - name: created_at
+        data_type: timestamp
+      - name: signup_month
+        data_type: date
+      - name: market_code
+        data_type: varchar
+      - name: signup_platform
+        data_type: varchar
+      - name: acquisition_channel
+        data_type: varchar
+      - name: is_big_match_signup
+        data_type: boolean
+        description: Signed up on a marquee match day (see seed big_match_days).
+      - name: first_billing_period
+        data_type: varchar
+      - name: started_with_trial
+        data_type: boolean
+      - name: converted_from_trial
+        data_type: boolean
+        description: First subscription had a trial and was charged within the conversion window.
+      - name: first_paid_at
+        data_type: timestamp
+      - name: subscriptions
+        data_type: integer
+      - name: reactivations
+        data_type: integer
+      - name: lifetime_net_revenue_usd
+        data_type: numeric(18, 4)
+        description: Successful charges minus refunds, at daily FX.
+      - name: status_as_of
+        data_type: varchar
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [paying, trialing, churned, never_paid]

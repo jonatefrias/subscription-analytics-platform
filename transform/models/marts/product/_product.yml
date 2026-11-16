@@ -1,0 +1,23 @@
+version: 2
+
+models:
+  - name: fct_playback_daily
+    description: Customer x day engagement (incremental, 3-day lookback for late events).
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [customer_id, activity_date]
+
+  - name: fct_cohort_retention
+    description: Paying-customer retention curves by first-paid cohort.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [cohort_month, months_since_first_paid]
+    columns:
+      - name: retention_rate
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+                max_value: 1

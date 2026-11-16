@@ -1,0 +1,130 @@
+version: 2
+
+models:
+  - name: fct_subscriptions
+    description: One row per subscription with its full lifecycle and revenue.
+    config:
+      contract: {enforced: true}
+    columns:
+      - {name: subscription_id, data_type: varchar, constraints: [{type: not_null}, {type: primary_key}], data_tests: [unique, not_null]}
+      - name: customer_id
+        data_type: varchar
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_customers')
+                field: customer_id
+      - {name: plan_id, data_type: varchar}
+      - {name: market_code, data_type: varchar}
+      - {name: billing_period, data_type: varchar}
+      - {name: payment_provider, data_type: varchar}
+      - {name: subscription_number, data_type: integer, description: 1 for the first subscription of the customer.}
+      - {name: is_reactivation, data_type: boolean, description: Customer came back after a previous subscription ended (plan switches excluded).}
+      - {name: is_plan_change, data_type: boolean, description: Successor of a monthly-to-annual switch.}
+      - {name: had_trial, data_type: boolean}
+      - {name: has_paid, data_type: boolean}
+      - {name: started_at, data_type: timestamp}
+      - {name: trial_end_at, data_type: timestamp}
+      - {name: paid_from, data_type: timestamp}
+      - {name: canceled_at, data_type: timestamp}
+      - {name: ended_at, data_type: timestamp}
+      - name: end_type
+        data_type: varchar
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [voluntary, involuntary, trial, plan_change]
+      - {name: status_as_of, data_type: varchar}
+      - {name: paid_charges, data_type: integer}
+      - {name: gross_revenue_usd, data_type: "numeric(18, 4)"}
+      - {name: refunded_usd, data_type: "numeric(18, 4)"}
+      - {name: lifetime_days, data_type: integer}
+
+  - name: fct_payments
+    description: Every charge attempt (failed attempts and retries included) with USD amounts.
+    config:
+      contract: {enforced: true}
+    columns:
+      - {name: payment_id, data_type: varchar, constraints: [{type: not_null}, {type: primary_key}], data_tests: [unique, not_null]}
+      - {name: subscription_id, data_type: varchar}
+      - {name: customer_id, data_type: varchar}
+      - {name: plan_id, data_type: varchar}
+      - {name: market_code, data_type: varchar}
+      - {name: payment_provider, data_type: varchar}
+      - {name: attempt_number, data_type: integer}
+      - {name: payment_status, data_type: varchar}
+      - {name: billed_at, data_type: timestamp}
+      - {name: period_start, data_type: date}
+      - {name: currency_code, data_type: varchar}
+      - {name: amount_local, data_type: "numeric(18, 4)"}
+      - name: amount_usd
+        data_type: "numeric(18, 4)"
+        description: At the FX rate of the billing day.
+        data_tests: [not_null]
+      - {name: amount_usd_constant_fx, data_type: "numeric(18, 4)", description: At the budget-year average rate.}
+      - {name: is_refunded, data_type: boolean}
+      - {name: refunded_at, data_type: timestamp}
+
+  - name: fct_mrr_monthly
+    description: >
+      Customer x month MRR (USD, constant FX, list price) and the movement versus the prior month.
+      Months where a customer has no MRR before and after are omitted.
+    config:
+      contract: {enforced: true}
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [customer_id, month_start]
+    columns:
+      - {name: customer_id, data_type: varchar, constraints: [{type: not_null}]}
+      - {name: month_start, data_type: date, constraints: [{type: not_null}]}
+      - {name: previous_mrr_usd, data_type: "numeric(18, 4)"}
+      - {name: mrr_usd, data_type: "numeric(18, 4)"}
+      - {name: mrr_change_usd, data_type: "numeric(18, 4)"}
+      - name: movement_type
+        data_type: varchar
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [new, reactivation, expansion, contraction, churn, retained]
+
+  - name: rpt_mrr_bridge
+    description: Monthly MRR bridge. See tests/assert_mrr_bridge_reconciles.sql.
+    columns:
+      - name: month_start
+        data_tests: [unique, not_null]
+
+unit_tests:
+  - name: test_mrr_movement_classification
+    description: >
+      One customer goes through every movement type; a second one is checked so
+      that a first-ever payment after empty months is still "new", not "reactivation".
+    model: fct_mrr_monthly
+    given:
+      - input: ref('int_months')
+        rows:
+          - {month_start: "2025-01-01"}
+          - {month_start: "2025-02-01"}
+          - {month_start: "2025-03-01"}
+          - {month_start: "2025-04-01"}
+          - {month_start: "2025-05-01"}
+          - {month_start: "2025-06-01"}
+          - {month_start: "2025-07-01"}
+      - input: ref('int_mrr__customer_months')
+        rows:
+          - {customer_id: a, month_start: "2025-01-01", mrr_usd: 10}
+          - {customer_id: a, month_start: "2025-02-01", mrr_usd: 12}
+          - {customer_id: a, month_start: "2025-03-01", mrr_usd: 12}
+          - {customer_id: a, month_start: "2025-04-01", mrr_usd: 8}
+          - {customer_id: a, month_start: "2025-07-01", mrr_usd: 8}
+          - {customer_id: b, month_start: "2025-06-01", mrr_usd: 5}
+    expect:
+      rows:
+        - {customer_id: a, month_start: "2025-01-01", movement_type: new}
+        - {customer_id: a, month_start: "2025-02-01", movement_type: expansion}
+        - {customer_id: a, month_start: "2025-03-01", movement_type: retained}
+        - {customer_id: a, month_start: "2025-04-01", movement_type: contraction}
+        - {customer_id: a, month_start: "2025-05-01", movement_type: churn}
+        - {customer_id: a, month_start: "2025-07-01", movement_type: reactivation}
+        - {customer_id: b, month_start: "2025-06-01", movement_type: new}
+        - {customer_id: b, month_start: "2025-07-01", movement_type: churn}

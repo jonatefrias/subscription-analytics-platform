@@ -1,0 +1,92 @@
+version: 2
+
+models:
+  - name: stg_crm__customers
+    description: Latest profile version per customer, with normalised country code and channel.
+    columns:
+      - name: customer_id
+        data_tests: [unique, not_null]
+      - name: country_code
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [US, MX, ES, AR, CL, CO, PE]
+      - name: acquisition_channel
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [paid_social, paid_search, organic, referral, partner, unknown]
+
+  - name: stg_billing__plans
+    columns:
+      - name: plan_id
+        data_tests: [unique, not_null]
+
+  - name: stg_billing__plan_prices
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [plan_id, valid_from]
+
+  - name: stg_billing__subscriptions
+    columns:
+      - name: subscription_id
+        data_tests: [unique, not_null]
+      - name: customer_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_crm__customers')
+                field: customer_id
+      - name: plan_id
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('stg_billing__plans')
+                field: plan_id
+      - name: cancel_reason
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [voluntary, payment_failed, trial_not_converted, plan_change]
+
+  - name: stg_billing__payments
+    columns:
+      - name: payment_id
+        data_tests: [unique, not_null]
+      - name: payment_status
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [paid, failed]
+      - name: currency_code
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [USD, MXN, EUR, CLP, COP, PEN]
+
+  - name: stg_finance__fx_rates
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [rate_date, currency_code]
+
+  - name: stg_app__playback_events
+    description: Deduplicated playback events with valid watch time.
+    columns:
+      - name: event_id
+        data_tests: [unique, not_null]
+
+  - name: stg_marketing__spend
+    columns:
+      - name: spend_usd
+        data_tests:
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
+
+  - name: stg_experiments__assignments
+    columns:
+      - name: customer_id
+        data_tests: [unique]

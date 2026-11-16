@@ -1,0 +1,39 @@
+version: 2
+
+sources:
+  - name: raw
+    description: >
+      Raw extracts landed by the ingestion layer. Locally they are Parquet files read
+      in place by DuckDB; in Snowflake they are tables in the RAW schema loaded with COPY INTO.
+    schema: raw
+    meta:
+      external_location: "../data/raw/{name}.parquet"
+    tables:
+      - name: crm_customers
+        description: CRM export. One row per profile *version*, not per customer.
+        columns:
+          - name: customer_id
+            data_tests: [not_null]
+      - name: billing_plans
+        columns:
+          - name: plan_id
+            data_tests: [unique, not_null]
+      - name: billing_plan_prices
+        description: Price list with validity ranges (SCD type 2).
+      - name: billing_subscriptions
+        columns:
+          - name: subscription_id
+            data_tests: [unique, not_null]
+      - name: billing_payments
+        description: Every charge attempt, including failed attempts and retries.
+        columns:
+          - name: payment_id
+            data_tests: [unique, not_null]
+      - name: finance_fx_rates
+        description: Daily FX rates expressed as units of currency per 1 USD.
+      - name: app_playback_events
+        description: Client playback events. At-least-once delivery, so ids can repeat.
+      - name: marketing_spend
+        description: Daily paid media spend in USD by market and channel.
+      - name: experiments_assignments
+        description: Experiment variant assignment at signup.

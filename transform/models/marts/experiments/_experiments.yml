@@ -1,0 +1,13 @@
+version: 2
+
+models:
+  - name: fct_experiment_exposures
+    description: Customers exposed to experiments with their conversion and revenue outcomes.
+    columns:
+      - name: customer_id
+        data_tests: [unique, not_null]
+      - name: variant
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [control, annual_highlight]
