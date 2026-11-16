@@ -2,8 +2,74 @@ version: 2
 
 models:
   - name: fct_acquisition_daily
-    description: Day x market x channel signups, trial funnel and paid media spend.
+    description: Day x market x channel signups, trial funnel and paid media spend (CRM view).
     data_tests:
       - dbt_utils.unique_combination_of_columns:
           arguments:
             combination_of_columns: [activity_date, market_code, acquisition_channel]
+
+  - name: fct_web_sessions
+    description: >
+      GA4 web sessions. customer_id is filled through identity stitching, including the
+      anonymous sessions a cookie had before signing up.
+    columns:
+      - name: session_key
+        data_tests: [unique, not_null]
+      - name: customer_id
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_customers')
+                field: customer_id
+
+  - name: fct_web_funnel_daily
+    description: Day x market x session channel funnel counts from GA4.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [activity_date, market_code, channel]
+
+  - name: fct_signup_attribution
+    description: >
+      Customers whose signup GA4 observed, with touchpoint count, first-touch and
+      last-non-direct channel next to the channel stored in the CRM.
+    columns:
+      - name: customer_id
+        data_tests: [unique, not_null]
+      - name: touchpoints
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 1
+      - name: last_non_direct_channel
+        data_tests: [not_null]
+
+  - name: rpt_web_tracking_coverage
+    description: Share of CRM web signups that GA4 recorded, and first-touch agreement with the CRM, by month.
+    columns:
+      - name: signup_month
+        data_tests: [unique, not_null]
+
+unit_tests:
+  - name: test_first_touch_and_last_non_direct
+    description: >
+      Customer a: organic research, a paid social retargeting visit, then signs up on a
+      direct visit. First touch is organic, last non-direct is paid social, and the
+      login session after signup is not a touchpoint. Customer b only ever came direct.
+    model: fct_signup_attribution
+    given:
+      - input: ref('fct_web_sessions')
+        rows:
+          - {customer_id: a, session_started_at: "2026-03-01 10:00:00", channel: organic,     source: google,   signed_up: false}
+          - {customer_id: a, session_started_at: "2026-03-03 21:00:00", channel: paid_social, source: meta,     signed_up: false}
+          - {customer_id: a, session_started_at: "2026-03-05 09:00:00", channel: direct,      source: (direct), signed_up: true}
+          - {customer_id: a, session_started_at: "2026-03-20 18:00:00", channel: direct,      source: (direct), signed_up: false}
+          - {customer_id: b, session_started_at: "2026-04-02 12:00:00", channel: direct,      source: (direct), signed_up: true}
+      - input: ref('dim_customers')
+        rows:
+          - {customer_id: a, acquisition_channel: organic, market_code: ES}
+          - {customer_id: b, acquisition_channel: unknown, market_code: MX}
+    expect:
+      rows:
+        - {customer_id: a, touchpoints: 3, first_touch_channel: organic, last_non_direct_channel: paid_social, days_first_touch_to_signup: 4, crm_channel: organic}
+        - {customer_id: b, touchpoints: 1, first_touch_channel: direct,  last_non_direct_channel: direct,      days_first_touch_to_signup: 0, crm_channel: unknown}

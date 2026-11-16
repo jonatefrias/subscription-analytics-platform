@@ -24,6 +24,10 @@ a separate profile.
 | Model contracts on the public marts | `dim_customers`, `fct_subscriptions`, `fct_payments`, `fct_mrr_monthly` |
 | dbt unit test for business logic (MRR movement classification) | `models/marts/finance/_finance.yml` |
 | Reconciliation tests (bridge adds up, no lost payments, no MRR without a charge) | `transform/tests/` |
+| GA4 BigQuery-export events: unnesting `event_params` with one macro per warehouse | `macros/ga4.sql`, `stg_ga4__events` |
+| Sessionization, channel grouping and identity stitching (anonymous cookie → customer) | `int_ga4__sessions`, `int_ga4__identity_map` |
+| First-touch vs last-non-direct attribution, compared with the CRM channel | `fct_signup_attribution` (unit tested) |
+| Tracking coverage vs the CRM (consent gap) with a warn-level test | `rpt_web_tracking_coverage`, `tests/warn_ga4_tracking_coverage.sql` |
 | CI on every pull request | `.github/workflows/ci.yml` |
 
 ## Architecture
@@ -37,6 +41,7 @@ flowchart LR
         app[app_playback_events]
         mkt[marketing_spend]
         exp[experiments_assignments]
+        ga4[ga4_events<br/>GA4 export layout]
     end
     subgraph Staging["staging: clean & conform"]
         stg[stg_* views]
@@ -45,12 +50,13 @@ flowchart LR
         life[int_subscriptions__lifecycle]
         pay[int_payments__converted]
         mrr[int_mrr__subscription_months]
+        sess[int_ga4__sessions<br/>int_ga4__identity_map]
     end
     subgraph Marts
         core[core<br/>dim_customers, dim_plans, dim_date]
         fin[finance<br/>fct_subscriptions, fct_payments,<br/>fct_mrr_monthly, rpt_mrr_bridge]
         prod[product<br/>fct_playback_daily, fct_cohort_retention]
-        mk[marketing<br/>fct_acquisition_daily]
+        mk[marketing<br/>fct_acquisition_daily, fct_web_sessions,<br/>fct_web_funnel_daily, fct_signup_attribution]
         ex[experiments<br/>fct_experiment_exposures]
     end
     Sources --> Staging --> Intermediate --> Marts
@@ -60,8 +66,8 @@ flowchart LR
 
 ```bash
 make setup          # virtualenv + pinned dependencies (Python 3.11)
-make data           # ~95k customers, 6M playback events (SCALE=0.2 for a 5-second run)
-make build          # dbt deps + dbt build: 26 models, 1 seed, 70 data tests, 1 unit test
+make data           # ~95k customers, 6M playback events, 1.4M GA4 events (SCALE=0.2 for a quick run)
+make build          # dbt deps + dbt build: 33 models, 3 seeds, 99 data tests, 2 unit tests
 make docs           # dbt docs site with lineage
 ```
 
@@ -77,6 +83,12 @@ the Parquet files into a `RAW` schema, and run `DBT_TARGET=snowflake dbt build`.
   `contraction`, `churn`, `retained`. Every month satisfies
   `opening + new + reactivation + expansion + contraction + churn = closing` (enforced by a test).
 - **Trial conversion** – the first subscription had a trial and was charged within 14 days.
+- **Web session** – one GA4 cookie (`user_pseudo_id`) + `ga_session_id`. The traffic source is the one on
+  the session's first event; spellings are normalised through the `ga4_source_aliases` seed.
+- **Identity stitching** – a cookie belongs to the first customer it was seen logged in as, which also
+  identifies the anonymous sessions it had before signing up.
+- **Attribution** – touchpoints are a customer's stitched sessions up to the signup session.
+  First touch = earliest; last non-direct = latest that was not direct.
 - **Churn timing** – a cancellation removes MRR when access ends, not when the customer clicks
   "cancel". That is why off-season cancellations show up one month later in the bridge.
 
@@ -93,6 +105,10 @@ The generator plants known behaviours; the marts recover them, which doubles as 
 | Big-match-day signups churn faster | 27.3% early voluntary churn vs 22.6% |
 | Paywall test highlighting the annual plan | annual share 25.9% vs 14.7%; 30-day revenue per user $24.8 vs $16.2 |
 | Paying retention | 89% at month 1, 65% at month 6, 44% at month 12 |
+| 12% of web visitors decline analytics consent | GA4 records 87.9% of the web signups in the CRM |
+| Research visits on a second device stay anonymous | first-touch channel agrees with the CRM for 79.7% of signups |
+| Paid-social retargeting between first visit and signup | last-non-direct gives paid social 7.6% more signups than first touch |
+| Logins link earlier anonymous visits | a third of the sessions tied to a customer are identified only through stitching |
 
 ## Project structure
 
@@ -103,13 +119,14 @@ transform/            dbt project
   models/intermediate/  reusable business logic, not exposed to BI
   models/marts/       contracted, documented tables for BI and analysis
   tests/              singular reconciliation tests
-  seeds/              business calendar (marquee match days)
+  seeds/              business calendar, GA4 source aliases, country reference
 docs/decisions.md     design decisions and trade-offs
 ```
 
 ## Roadmap
 
 - [x] Synthetic sources, staging, marts, contracts, unit and reconciliation tests, CI
+- [x] Web analytics: GA4 export, sessions, identity stitching, attribution, tracking coverage
 - [ ] Semantic layer (MetricFlow) with MRR, churn, ARPU, CAC and conversion metrics
 - [ ] Orchestration with Dagster (dbt assets, schedules, freshness checks)
 - [ ] Snowflake deployment and slim CI (`state:modified+`)

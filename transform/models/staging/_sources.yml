@@ -37,3 +37,8 @@ sources:
         description: Daily paid media spend in USD by market and channel.
       - name: experiments_assignments
         description: Experiment variant assignment at signup.
+      - name: ga4_events
+        description: >
+          GA4 web stream in the BigQuery export layout (events_*). event_params is a repeated
+          key/value record, event_timestamp is UTC microseconds and event_date is the property's
+          local date.

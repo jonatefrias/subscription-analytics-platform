@@ -41,3 +41,29 @@ models:
       - dbt_utils.unique_combination_of_columns:
           arguments:
             combination_of_columns: [customer_id, month_start]
+
+  - name: int_ga4__sessions
+    description: One row per GA4 session with traffic source, channel grouping and funnel flags.
+    columns:
+      - name: session_key
+        data_tests: [unique, not_null]
+      - name: channel
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [paid_social, paid_search, organic, referral, partner, direct, other]
+      - name: market_code
+        description: Null would mean a country name missing from the countries seed.
+        data_tests: [not_null]
+
+  - name: int_ga4__identity_map
+    description: First customer each GA4 cookie was identified with.
+    columns:
+      - name: user_pseudo_id
+        data_tests: [unique, not_null]
+      - name: customer_id
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('stg_crm__customers')
+                field: customer_id

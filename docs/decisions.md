@@ -45,3 +45,25 @@ models change often and are protected by tests instead.
 Cross-database macros (`dbt.dateadd`, `dbt.datediff`, `dbt.date_trunc`) and no vendor-specific
 syntax keep the project portable to Snowflake. One caveat: the contract data types are declared
 in DuckDB/Snowflake names, so BigQuery would need its own type names.
+
+## 10. Dates come from the UTC timestamp, not from GA4's `event_date`
+The GA4 export's `event_date` is the *property's* local day (New York here), while billing and
+playback are in UTC. Using `event_date` would move evening sessions to the next day and break
+day-level joins with spend and signups. Every web date is derived from `event_timestamp`.
+
+## 11. One macro per warehouse for GA4 parameters
+`event_params` is a repeated key/value record, and DuckDB, BigQuery and Snowflake unnest it with
+different syntax. `ga4_param()` dispatches per adapter, so the staging model reads the same on
+every warehouse. Only the DuckDB variant runs in CI; the BigQuery and Snowflake variants are untested.
+
+## 12. GA4 is never the source of truth for signups
+About 12% of visitors decline analytics consent and some sign up on a device GA4 never linked.
+Signup and revenue counts come from the CRM and billing. GA4 explains *how* people arrived, and
+`rpt_web_tracking_coverage` measures how much of the business it sees, with a warn-level test
+when coverage drops below 80%.
+
+## 13. Two attribution views side by side, no blended model
+First touch and last non-direct are both kept, next to the channel the CRM recorded. They
+answer different questions (what opens the door vs what closes the deal), and the gap between
+them is the finding: retargeting makes last-touch over-credit paid social. A data-driven or
+position-based model would need more signal than a portfolio dataset can justify.

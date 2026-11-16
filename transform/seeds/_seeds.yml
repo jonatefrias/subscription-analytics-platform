@@ -7,3 +7,19 @@ seeds:
     columns:
       - name: match_date
         data_tests: [unique, not_null]
+
+  - name: ga4_source_aliases
+    description: >
+      Maps the spellings that UTM tags actually arrive with (lower-cased) to one canonical source.
+      Marketing owns this list; an unmapped source falls through as itself.
+    columns:
+      - name: raw_source
+        data_tests: [unique, not_null]
+
+  - name: countries
+    description: Market reference. GA4 reports country names; billing and CRM use ISO codes.
+    columns:
+      - name: country_code
+        data_tests: [unique, not_null]
+      - name: country_name
+        data_tests: [unique, not_null]
