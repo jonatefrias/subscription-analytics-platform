@@ -1,0 +1,186 @@
+version: 2
+
+# The semantic layer is where metric definitions live. Marts store additive facts;
+# every ratio and every snapshot rule is defined once here and reused by any tool.
+
+semantic_models:
+
+  # ------------------------------------------------------------------ MRR
+  - name: customer_mrr
+    description: Customer x month MRR snapshot and the movement that explains the change.
+    model: ref('fct_mrr_monthly')
+    defaults:
+      agg_time_dimension: mrr_month
+    entities:
+      - name: customer_month
+        type: primary
+        expr: "customer_id || '|' || cast(month_start as varchar)"
+      - name: customer
+        type: foreign
+        expr: customer_id
+    dimensions:
+      - name: mrr_month
+        type: time
+        expr: month_start
+        type_params:
+          time_granularity: month
+      - name: movement_type
+        type: categorical
+    measures:
+      # Snapshots: summing them over months is wrong. At quarter or year grain take the
+      # closing month (window_choice: max) or the opening month (min).
+      - name: mrr_usd
+        description: Closing MRR (USD, constant FX).
+        agg: sum
+        non_additive_dimension:
+          name: mrr_month
+          window_choice: max
+      - name: opening_mrr_usd
+        agg: sum
+        expr: previous_mrr_usd
+        non_additive_dimension:
+          name: mrr_month
+          window_choice: min
+      - name: paying_customers
+        agg: sum
+        expr: "case when mrr_usd > 0 then 1 else 0 end"
+        non_additive_dimension:
+          name: mrr_month
+          window_choice: max
+      - name: opening_customers
+        agg: sum
+        expr: "case when previous_mrr_usd > 0 then 1 else 0 end"
+        non_additive_dimension:
+          name: mrr_month
+          window_choice: min
+      # Flows: additive over time.
+      - name: mrr_change_usd
+        agg: sum
+      - name: churned_customers
+        agg: sum
+        expr: "case when movement_type = 'churn' then 1 else 0 end"
+
+  # ------------------------------------------------------------ customers
+  - name: customers
+    description: One row per customer with acquisition attributes and trial outcome.
+    model: ref('dim_customers')
+    defaults:
+      agg_time_dimension: signup_at
+    entities:
+      - name: customer
+        type: primary
+        expr: customer_id
+    dimensions:
+      - name: signup_at
+        type: time
+        expr: created_at
+        type_params:
+          time_granularity: day
+      - name: market_code
+        type: categorical
+      - name: signup_platform
+        type: categorical
+      - name: acquisition_channel
+        type: categorical
+      - name: first_billing_period
+        type: categorical
+      - name: is_big_match_signup
+        type: categorical
+    measures:
+      - name: signups
+        agg: sum
+        expr: "1"
+      - name: trials_started
+        agg: sum
+        expr: "case when started_with_trial then 1 else 0 end"
+      - name: trials_converted
+        agg: sum
+        expr: "case when converted_from_trial then 1 else 0 end"
+
+  # -------------------------------------------------------------- payments
+  - name: payments
+    description: Every charge attempt with USD amounts.
+    model: ref('fct_payments')
+    defaults:
+      agg_time_dimension: billed_at
+    entities:
+      - name: payment
+        type: primary
+        expr: payment_id
+      - name: customer
+        type: foreign
+        expr: customer_id
+    dimensions:
+      - name: billed_at
+        type: time
+        type_params:
+          time_granularity: day
+      - name: payment_provider
+        type: categorical
+      - name: payment_status
+        type: categorical
+    measures:
+      - name: collected_revenue_usd
+        description: Successful charges at the FX rate of the billing day.
+        agg: sum
+        expr: "case when payment_status = 'paid' then amount_usd else 0 end"
+      - name: charge_attempts
+        agg: sum
+        expr: "1"
+      - name: failed_charges
+        agg: sum
+        expr: "case when payment_status = 'failed' then 1 else 0 end"
+
+  # ----------------------------------------------------------- acquisition
+  - name: acquisition
+    description: Daily paid media spend and paying customers acquired, by market and channel (CRM view).
+    model: ref('fct_acquisition_daily')
+    defaults:
+      agg_time_dimension: acquisition_date
+    entities:
+      - name: acquisition_day
+        type: primary
+        expr: "cast(activity_date as varchar) || '|' || market_code || '|' || acquisition_channel"
+    dimensions:
+      - name: acquisition_date
+        type: time
+        expr: activity_date
+        type_params:
+          time_granularity: day
+      - name: market_code
+        type: categorical
+      - name: acquisition_channel
+        type: categorical
+    measures:
+      - name: spend_usd
+        agg: sum
+      - name: paying_customers_acquired
+        agg: sum
+
+  # ------------------------------------------------------------- web funnel
+  - name: web_funnel
+    description: GA4 sessions and funnel steps by day, market and session channel.
+    model: ref('fct_web_funnel_daily')
+    defaults:
+      agg_time_dimension: session_date
+    entities:
+      - name: web_funnel_day
+        type: primary
+        expr: "cast(activity_date as varchar) || '|' || market_code || '|' || channel"
+    dimensions:
+      - name: session_date
+        type: time
+        expr: activity_date
+        type_params:
+          time_granularity: day
+      - name: market_code
+        type: categorical
+      - name: channel
+        type: categorical
+    measures:
+      - name: sessions
+        agg: sum
+      - name: paywall_sessions
+        agg: sum
+      - name: signup_sessions
+        agg: sum

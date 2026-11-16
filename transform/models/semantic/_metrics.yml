@@ -1,0 +1,244 @@
+version: 2
+
+metrics:
+  # ------------------------------------------------------------ MRR & churn
+  - name: mrr
+    label: MRR (USD)
+    description: Closing monthly recurring revenue at constant FX. At quarter or year grain, the closing month.
+    type: simple
+    type_params: {measure: mrr_usd}
+
+  - name: opening_mrr
+    label: Opening MRR (USD)
+    type: simple
+    type_params: {measure: opening_mrr_usd}
+
+  - name: paying_customers
+    label: Paying customers
+    type: simple
+    type_params: {measure: paying_customers}
+
+  - name: new_mrr
+    label: New MRR (USD)
+    type: simple
+    type_params:
+      measure:
+        name: mrr_change_usd
+        fill_nulls_with: 0
+        join_to_timespine: false
+    filter: "{{ Dimension('customer_month__movement_type') }} = 'new'"
+
+  - name: reactivation_mrr
+    label: Reactivation MRR (USD)
+    type: simple
+    type_params:
+      measure:
+        name: mrr_change_usd
+        fill_nulls_with: 0
+        join_to_timespine: false
+    filter: "{{ Dimension('customer_month__movement_type') }} = 'reactivation'"
+
+  - name: expansion_mrr
+    label: Expansion MRR (USD)
+    type: simple
+    type_params:
+      measure:
+        name: mrr_change_usd
+        fill_nulls_with: 0
+        join_to_timespine: false
+    filter: "{{ Dimension('customer_month__movement_type') }} = 'expansion'"
+
+  - name: contraction_mrr
+    label: Contraction MRR (USD, negative)
+    type: simple
+    type_params:
+      measure:
+        name: mrr_change_usd
+        fill_nulls_with: 0
+        join_to_timespine: false
+    filter: "{{ Dimension('customer_month__movement_type') }} = 'contraction'"
+
+  - name: churned_mrr
+    label: Churned MRR (USD, negative)
+    type: simple
+    type_params:
+      measure:
+        name: mrr_change_usd
+        fill_nulls_with: 0
+        join_to_timespine: false
+    filter: "{{ Dimension('customer_month__movement_type') }} = 'churn'"
+
+  - name: net_new_mrr
+    label: Net new MRR (USD)
+    type: simple
+    type_params:
+      measure:
+        name: mrr_change_usd
+        fill_nulls_with: 0
+        join_to_timespine: false
+
+  - name: churned_customers
+    label: Churned customers
+    type: simple
+    type_params:
+      measure:
+        name: churned_customers
+        fill_nulls_with: 0
+        join_to_timespine: false
+
+  - name: logo_churn_rate
+    label: Logo churn rate
+    description: Customers lost in the period over paying customers at the start of the period.
+    type: ratio
+    type_params:
+      numerator: churned_customers
+      denominator:
+        name: opening_customers_metric
+
+  - name: opening_customers_metric
+    label: Opening paying customers
+    type: simple
+    type_params: {measure: opening_customers}
+
+  - name: gross_mrr_churn_rate
+    label: Gross MRR churn rate
+    description: MRR lost to churn and contraction over opening MRR.
+    type: derived
+    type_params:
+      expr: -(churned_mrr + contraction_mrr) / nullif(opening_mrr, 0)
+      metrics:
+        - name: churned_mrr
+        - name: contraction_mrr
+        - name: opening_mrr
+
+  - name: arpu
+    label: ARPU (USD per paying customer per month)
+    type: ratio
+    type_params:
+      numerator: mrr
+      denominator: paying_customers
+
+  # ---------------------------------------------------------- acquisition
+  - name: signups
+    label: Signups (CRM)
+    type: simple
+    type_params: {measure: signups}
+
+  - name: trial_conversion_rate
+    label: Trial conversion rate
+    description: Trials charged within the conversion window over trials started, by signup date.
+    type: ratio
+    type_params:
+      numerator:
+        name: trials_converted_metric
+      denominator:
+        name: trials_started_metric
+
+  - name: trials_started_metric
+    label: Trials started
+    type: simple
+    type_params: {measure: trials_started}
+
+  - name: trials_converted_metric
+    label: Trials converted
+    type: simple
+    type_params: {measure: trials_converted}
+
+  - name: marketing_spend
+    label: Paid media spend (USD)
+    type: simple
+    type_params: {measure: spend_usd}
+
+  - name: paying_customers_acquired
+    label: Paying customers acquired
+    type: simple
+    type_params: {measure: paying_customers_acquired}
+
+  - name: cac
+    label: CAC (USD)
+    description: Paid media spend over paying customers acquired, same day, market and channel.
+    type: ratio
+    type_params:
+      numerator: marketing_spend
+      denominator: paying_customers_acquired
+
+  # --------------------------------------------------------------- revenue
+  - name: collected_revenue
+    label: Collected revenue (USD, daily FX)
+    type: simple
+    type_params: {measure: collected_revenue_usd}
+
+  - name: payment_failure_rate
+    label: Payment failure rate
+    type: ratio
+    type_params:
+      numerator:
+        name: failed_charges_metric
+      denominator:
+        name: charge_attempts_metric
+
+  - name: failed_charges_metric
+    label: Failed charges
+    type: simple
+    type_params: {measure: failed_charges}
+
+  - name: charge_attempts_metric
+    label: Charge attempts
+    type: simple
+    type_params: {measure: charge_attempts}
+
+  # ------------------------------------------------------------ web funnel
+  - name: web_sessions
+    label: Web sessions (GA4)
+    type: simple
+    type_params: {measure: sessions}
+
+  - name: paywall_view_rate
+    label: Sessions reaching the paywall
+    type: ratio
+    type_params:
+      numerator:
+        name: paywall_sessions_metric
+      denominator: web_sessions
+
+  - name: web_signup_rate
+    label: Web session to signup rate
+    type: ratio
+    type_params:
+      numerator:
+        name: signup_sessions_metric
+      denominator: web_sessions
+
+  - name: paywall_sessions_metric
+    label: Paywall sessions
+    type: simple
+    type_params: {measure: paywall_sessions}
+
+  - name: signup_sessions_metric
+    label: Signup sessions
+    type: simple
+    type_params: {measure: signup_sessions}
+
+saved_queries:
+  - name: mrr_bridge
+    description: The monthly MRR bridge and the KPIs finance reviews every month.
+    query_params:
+      metrics: [opening_mrr, new_mrr, reactivation_mrr, expansion_mrr, contraction_mrr, churned_mrr, mrr, paying_customers, logo_churn_rate, gross_mrr_churn_rate, arpu]
+      group_by:
+        - "TimeDimension('metric_time', 'month')"
+
+  - name: acquisition_efficiency
+    description: Monthly spend, paying customers acquired and CAC by channel.
+    query_params:
+      metrics: [marketing_spend, paying_customers_acquired, cac]
+      group_by:
+        - "TimeDimension('metric_time', 'month')"
+        - "Dimension('acquisition_day__acquisition_channel')"
+
+  - name: web_funnel_by_channel
+    description: Monthly GA4 sessions, paywall rate and signup rate by session channel.
+    query_params:
+      metrics: [web_sessions, paywall_view_rate, web_signup_rate]
+      group_by:
+        - "TimeDimension('metric_time', 'month')"
+        - "Dimension('web_funnel_day__channel')"
