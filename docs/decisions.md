@@ -67,3 +67,22 @@ First touch and last non-direct are both kept, next to the channel the CRM recor
 answer different questions (what opens the door vs what closes the deal), and the gap between
 them is the finding: retargeting makes last-touch over-credit paid social. A data-driven or
 position-based model would need more signal than a portfolio dataset can justify.
+
+## 14. Snapshot measures are declared non-additive
+MRR, paying customers and their opening values are balances, not flows. Summing them over the
+months of a quarter triples the number. In the semantic layer they carry a `non_additive_dimension`
+on the month: closing values take the last month of the period (`window_choice: max`) and opening
+values the first (`min`). Flows such as new or churned MRR stay additive. A quarterly check in CI
+proves the rule.
+
+## 15. The metric layer has to reconcile with the marts
+A metric definition is code that can be wrong (a filter on the wrong value, a missing
+`fill_nulls_with`). `scripts/check_semantic_layer.py` queries the `mrr_bridge` saved query and
+compares every metric, every month, with `rpt_mrr_bridge`. On its first run it caught that filtered
+metrics returned null instead of 0 in months without that movement, which also nulled the gross
+MRR churn rate. Hence `fill_nulls_with: 0` on every flow metric.
+
+## 16. Semantic layer runs locally with MetricFlow, not dbt Cloud
+The dbt Semantic Layer API (JDBC/GraphQL for BI tools) is a paid dbt Cloud feature. The
+definitions here are standard dbt YAML, so they would work there unchanged; locally they are
+validated and queried with the open-source `mf` CLI, which is enough to prove they are correct.

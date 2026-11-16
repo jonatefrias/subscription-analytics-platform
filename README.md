@@ -28,6 +28,8 @@ a separate profile.
 | Sessionization, channel grouping and identity stitching (anonymous cookie → customer) | `int_ga4__sessions`, `int_ga4__identity_map` |
 | First-touch vs last-non-direct attribution, compared with the CRM channel | `fct_signup_attribution` (unit tested) |
 | Tracking coverage vs the CRM (consent gap) with a warn-level test | `rpt_web_tracking_coverage`, `tests/warn_ga4_tracking_coverage.sql` |
+| Semantic layer (MetricFlow): 30 metrics, snapshot (semi-additive) MRR, ratios defined once | `models/semantic/` |
+| Metric layer reconciled against the marts in CI (34 months x 11 metrics, quarterly snapshots) | `scripts/check_semantic_layer.py` |
 | CI on every pull request | `.github/workflows/ci.yml` |
 
 ## Architecture
@@ -59,7 +61,10 @@ flowchart LR
         mk[marketing<br/>fct_acquisition_daily, fct_web_sessions,<br/>fct_web_funnel_daily, fct_signup_attribution]
         ex[experiments<br/>fct_experiment_exposures]
     end
-    Sources --> Staging --> Intermediate --> Marts
+    subgraph Semantic["semantic layer (MetricFlow)"]
+        sl[semantic models<br/>metrics, saved queries]
+    end
+    Sources --> Staging --> Intermediate --> Marts --> Semantic
 ```
 
 ## Quickstart
@@ -68,7 +73,17 @@ flowchart LR
 make setup          # virtualenv + pinned dependencies (Python 3.11)
 make data           # ~95k customers, 6M playback events, 1.4M GA4 events (SCALE=0.2 for a quick run)
 make build          # dbt deps + dbt build: 33 models, 3 seeds, 99 data tests, 2 unit tests
+make metrics        # validate the semantic layer and reconcile it with the marts
 make docs           # dbt docs site with lineage
+```
+
+Query metrics from the semantic layer (run inside `transform/` with `DBT_PROFILES_DIR=.`):
+
+```bash
+mf query --saved-query mrr_bridge
+mf query --metrics mrr,logo_churn_rate --group-by metric_time__quarter
+mf query --metrics mrr,arpu --group-by customer__market_code --where "{{ TimeDimension('metric_time', 'month') }} = '2026-10-01'"
+mf query --metrics cac --group-by metric_time__month,acquisition_day__acquisition_channel
 ```
 
 To run against Snowflake, export the `SNOWFLAKE_*` variables listed in `transform/profiles.yml`, load
@@ -91,6 +106,10 @@ the Parquet files into a `RAW` schema, and run `DBT_TARGET=snowflake dbt build`.
   First touch = earliest; last non-direct = latest that was not direct.
 - **Churn timing** – a cancellation removes MRR when access ends, not when the customer clicks
   "cancel". That is why off-season cancellations show up one month later in the bridge.
+
+- **Metrics** – every ratio (churn rates, ARPU, CAC, trial and web conversion) is defined once in the
+  semantic layer, never stored in a mart. MRR and customer counts are snapshot measures: at quarter or
+  year grain the semantic layer takes the closing month instead of summing months.
 
 More detail on the trade-offs in [docs/decisions.md](docs/decisions.md).
 
@@ -118,8 +137,10 @@ transform/            dbt project
   models/staging/     one model per source table, light cleaning only
   models/intermediate/  reusable business logic, not exposed to BI
   models/marts/       contracted, documented tables for BI and analysis
+  models/semantic/    semantic models, metrics and saved queries (MetricFlow)
   tests/              singular reconciliation tests
   seeds/              business calendar, GA4 source aliases, country reference
+scripts/              semantic-layer reconciliation check (runs in CI)
 docs/decisions.md     design decisions and trade-offs
 ```
 
@@ -127,7 +148,7 @@ docs/decisions.md     design decisions and trade-offs
 
 - [x] Synthetic sources, staging, marts, contracts, unit and reconciliation tests, CI
 - [x] Web analytics: GA4 export, sessions, identity stitching, attribution, tracking coverage
-- [ ] Semantic layer (MetricFlow) with MRR, churn, ARPU, CAC and conversion metrics
+- [x] Semantic layer (MetricFlow) with MRR, churn, ARPU, CAC and conversion metrics, reconciled in CI
 - [ ] Orchestration with Dagster (dbt assets, schedules, freshness checks)
 - [ ] Snowflake deployment and slim CI (`state:modified+`)
 - [ ] AI layer: an agent that answers questions through the semantic layer (MCP)

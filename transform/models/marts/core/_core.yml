@@ -2,9 +2,12 @@ version: 2
 
 models:
   - name: dim_date
-    description: Calendar with season and big-match flags.
+    description: Calendar with season and big-match flags. Also the MetricFlow time spine.
+    time_spine:
+      standard_granularity_column: date_day
     columns:
       - name: date_day
+        granularity: day
         data_tests: [unique, not_null]
 
   - name: dim_plans

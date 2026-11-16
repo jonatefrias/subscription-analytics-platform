@@ -11,6 +11,7 @@ jobs:
     env:
       DBT_TARGET: ci
       DBT_PROFILES_DIR: .
+      DUCKDB_PATH: /tmp/ci_warehouse.duckdb
     steps:
       - uses: actions/checkout@v5
 
@@ -32,3 +33,11 @@ jobs:
       - name: dbt build (models, seeds, data tests, unit tests, contracts)
         working-directory: transform
         run: dbt build --fail-fast
+
+      - name: Validate the semantic layer (definitions and warehouse)
+        working-directory: transform
+        run: mf validate-configs
+
+      - name: Reconcile semantic-layer metrics with the marts
+        working-directory: transform
+        run: python ../scripts/check_semantic_layer.py

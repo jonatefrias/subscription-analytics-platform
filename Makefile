@@ -3,7 +3,7 @@ PY      := .venv/bin/python
 DBT     := cd transform && DBT_PROFILES_DIR=. ../.venv/bin/dbt
 SCALE   ?= 1.0
 
-.PHONY: setup data deps build test docs clean
+.PHONY: setup data deps build test metrics docs clean
 
 setup:            ## create the virtualenv and install pinned dependencies
 	python3.11 -m venv .venv && .venv/bin/pip install -q -r requirements.txt
@@ -19,6 +19,9 @@ build: deps       ## run and test every model, seed and snapshot
 
 test:
 	$(DBT) test
+
+metrics:          ## validate the semantic layer and reconcile it with the marts
+	cd transform && DBT_PROFILES_DIR=. ../.venv/bin/mf validate-configs && DBT_PROFILES_DIR=. ../.venv/bin/python ../scripts/check_semantic_layer.py
 
 docs:             ## generate and serve the dbt docs site
 	$(DBT) docs generate && $(DBT) docs serve
