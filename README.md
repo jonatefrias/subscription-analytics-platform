@@ -1,5 +1,7 @@
 # Subscription Analytics Platform
 
+[![dbt CI](https://github.com/jonatefrias/subscription-analytics-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/jonatefrias/subscription-analytics-platform/actions/workflows/ci.yml)
+
 An end-to-end analytics engineering project for a **fictional sports-streaming subscription app** ("Matchday+"):
 synthetic source data with realistic behaviour and realistic mess → a layered **dbt** project with
 contracts, unit tests and reconciliation tests → finance, product, marketing and experimentation marts.
