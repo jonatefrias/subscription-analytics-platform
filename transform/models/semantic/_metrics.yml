@@ -4,22 +4,25 @@ metrics:
   # ------------------------------------------------------------ MRR & churn
   - name: mrr
     label: MRR (USD)
-    description: Closing monthly recurring revenue at constant FX. At quarter or year grain, the closing month.
+    description: "Closing monthly recurring revenue at constant FX. At quarter or year grain, the closing month."
     type: simple
     type_params: {measure: mrr_usd}
 
   - name: opening_mrr
     label: Opening MRR (USD)
+    description: "MRR at the start of the period (the previous month's closing MRR). Snapshot."
     type: simple
     type_params: {measure: opening_mrr_usd}
 
   - name: paying_customers
     label: Paying customers
+    description: "Customers with MRR above zero at the end of the period. Snapshot."
     type: simple
     type_params: {measure: paying_customers}
 
   - name: new_mrr
     label: New MRR (USD)
+    description: "MRR from customers paying for the first time. Flow, summed over the period."
     type: simple
     type_params:
       measure:
@@ -30,6 +33,7 @@ metrics:
 
   - name: reactivation_mrr
     label: Reactivation MRR (USD)
+    description: "MRR from customers who paid before, stopped, and came back. Flow."
     type: simple
     type_params:
       measure:
@@ -40,6 +44,7 @@ metrics:
 
   - name: expansion_mrr
     label: Expansion MRR (USD)
+    description: "MRR increase from existing customers (price increases, more subscriptions). Flow."
     type: simple
     type_params:
       measure:
@@ -50,6 +55,7 @@ metrics:
 
   - name: contraction_mrr
     label: Contraction MRR (USD, negative)
+    description: "MRR decrease from existing customers, e.g. monthly to annual switches. Negative flow."
     type: simple
     type_params:
       measure:
@@ -60,6 +66,7 @@ metrics:
 
   - name: churned_mrr
     label: Churned MRR (USD, negative)
+    description: "MRR lost from customers whose paid access ended. Negative flow."
     type: simple
     type_params:
       measure:
@@ -70,6 +77,7 @@ metrics:
 
   - name: net_new_mrr
     label: Net new MRR (USD)
+    description: "Closing minus opening MRR: the sum of all movements in the period. Flow."
     type: simple
     type_params:
       measure:
@@ -79,6 +87,7 @@ metrics:
 
   - name: churned_customers
     label: Churned customers
+    description: "Customers whose paid access ended in the period. Flow."
     type: simple
     type_params:
       measure:
@@ -88,7 +97,7 @@ metrics:
 
   - name: logo_churn_rate
     label: Logo churn rate
-    description: Customers lost in the period over paying customers at the start of the period.
+    description: "Customers lost in the period over paying customers at the start of the period."
     type: ratio
     type_params:
       numerator: churned_customers
@@ -97,12 +106,13 @@ metrics:
 
   - name: opening_customers_metric
     label: Opening paying customers
+    description: "Paying customers at the start of the period. Snapshot."
     type: simple
     type_params: {measure: opening_customers}
 
   - name: gross_mrr_churn_rate
     label: Gross MRR churn rate
-    description: MRR lost to churn and contraction over opening MRR.
+    description: "MRR lost to churn and contraction over opening MRR."
     type: derived
     type_params:
       expr: -(churned_mrr + contraction_mrr) / nullif(opening_mrr, 0)
@@ -113,6 +123,7 @@ metrics:
 
   - name: arpu
     label: ARPU (USD per paying customer per month)
+    description: "Average monthly revenue per paying customer: MRR / paying customers at the end of the period."
     type: ratio
     type_params:
       numerator: mrr
@@ -121,12 +132,13 @@ metrics:
   # ---------------------------------------------------------- acquisition
   - name: signups
     label: Signups (CRM)
+    description: "Accounts created in the period, from the CRM (the source of truth for signups)."
     type: simple
     type_params: {measure: signups}
 
   - name: trial_conversion_rate
     label: Trial conversion rate
-    description: Trials charged within the conversion window over trials started, by signup date.
+    description: "Trials charged within the conversion window over trials started, by signup date."
     type: ratio
     type_params:
       numerator:
@@ -136,27 +148,31 @@ metrics:
 
   - name: trials_started_metric
     label: Trials started
+    description: "Signups whose first subscription started with a trial."
     type: simple
     type_params: {measure: trials_started}
 
   - name: trials_converted_metric
     label: Trials converted
+    description: "Trials charged within the conversion window, by signup date."
     type: simple
     type_params: {measure: trials_converted}
 
   - name: marketing_spend
     label: Paid media spend (USD)
+    description: "Paid media spend in USD (paid social, paid search, partner)."
     type: simple
     type_params: {measure: spend_usd}
 
   - name: paying_customers_acquired
     label: Paying customers acquired
+    description: "Customers acquired in the period who have paid at least once, by signup date."
     type: simple
     type_params: {measure: paying_customers_acquired}
 
   - name: cac
     label: CAC (USD)
-    description: Paid media spend over paying customers acquired, same day, market and channel.
+    description: "Paid media spend over paying customers acquired, same day, market and channel."
     type: ratio
     type_params:
       numerator: marketing_spend
@@ -165,11 +181,13 @@ metrics:
   # --------------------------------------------------------------- revenue
   - name: collected_revenue
     label: Collected revenue (USD, daily FX)
+    description: "Successful charges at the FX rate of the billing day, before refunds."
     type: simple
     type_params: {measure: collected_revenue_usd}
 
   - name: payment_failure_rate
     label: Payment failure rate
+    description: "Failed charge attempts over all charge attempts."
     type: ratio
     type_params:
       numerator:
@@ -179,22 +197,26 @@ metrics:
 
   - name: failed_charges_metric
     label: Failed charges
+    description: "Charge attempts that failed (a retry is a separate attempt)."
     type: simple
     type_params: {measure: failed_charges}
 
   - name: charge_attempts_metric
     label: Charge attempts
+    description: "All charge attempts, retries included."
     type: simple
     type_params: {measure: charge_attempts}
 
   # ------------------------------------------------------------ web funnel
   - name: web_sessions
     label: Web sessions (GA4)
+    description: "GA4 web sessions. GA4 misses visitors who decline consent; not a count of people."
     type: simple
     type_params: {measure: sessions}
 
   - name: paywall_view_rate
     label: Sessions reaching the paywall
+    description: "Share of GA4 web sessions that reached the paywall."
     type: ratio
     type_params:
       numerator:
@@ -203,6 +225,7 @@ metrics:
 
   - name: web_signup_rate
     label: Web session to signup rate
+    description: "Share of GA4 web sessions with a signup. Use the CRM signups metric for totals."
     type: ratio
     type_params:
       numerator:
@@ -211,24 +234,26 @@ metrics:
 
   - name: paywall_sessions_metric
     label: Paywall sessions
+    description: "GA4 web sessions that reached the paywall."
     type: simple
     type_params: {measure: paywall_sessions}
 
   - name: signup_sessions_metric
     label: Signup sessions
+    description: "GA4 web sessions with a signup event."
     type: simple
     type_params: {measure: signup_sessions}
 
 saved_queries:
   - name: mrr_bridge
-    description: The monthly MRR bridge and the KPIs finance reviews every month.
+    description: "The monthly MRR bridge and the KPIs finance reviews every month."
     query_params:
       metrics: [opening_mrr, new_mrr, reactivation_mrr, expansion_mrr, contraction_mrr, churned_mrr, mrr, paying_customers, logo_churn_rate, gross_mrr_churn_rate, arpu]
       group_by:
         - "TimeDimension('metric_time', 'month')"
 
   - name: acquisition_efficiency
-    description: Monthly spend, paying customers acquired and CAC by channel.
+    description: "Monthly spend, paying customers acquired and CAC by channel."
     query_params:
       metrics: [marketing_spend, paying_customers_acquired, cac]
       group_by:
@@ -236,7 +261,7 @@ saved_queries:
         - "Dimension('acquisition_day__acquisition_channel')"
 
   - name: web_funnel_by_channel
-    description: Monthly GA4 sessions, paywall rate and signup rate by session channel.
+    description: "Monthly GA4 sessions, paywall rate and signup rate by session channel."
     query_params:
       metrics: [web_sessions, paywall_view_rate, web_signup_rate]
       group_by:
