@@ -10,33 +10,36 @@ with source as (
 flattened as (
 
     select
-        {{ micros_to_timestamp('event_timestamp') }}                                    as event_at,
+        {{ micros_to_timestamp('event_timestamp') }} as event_at,
         event_timestamp,
-        event_date                                                                      as property_date_key,
+        event_date as property_date_key,
         event_name,
         user_pseudo_id,
         user_id,
-        cast({{ ga4_param('event_params', 'ga_session_id', 'int_value') }} as bigint)     as ga_session_id,
+        cast({{ ga4_param('event_params', 'ga_session_id', 'int_value') }} as bigint) as ga_session_id,
         cast({{ ga4_param('event_params', 'ga_session_number', 'int_value') }} as integer) as ga_session_number,
-        {{ ga4_param('event_params', 'page_location', 'string_value') }}                  as page_location,
+        {{ ga4_param('event_params', 'page_location', 'string_value') }} as page_location,
         cast({{ ga4_param('event_params', 'engagement_time_msec', 'int_value') }} as bigint) as engagement_time_msec,
-        {{ ga4_param('event_params', 'plan_id', 'string_value') }}                        as plan_id,
-        {{ ga4_param('event_params', 'transaction_id', 'string_value') }}                 as transaction_id,
-        cast({{ ga4_param('event_params', 'value', 'double_value') }} as numeric(18, 4))  as purchase_value,
-        {{ ga4_param('event_params', 'currency', 'string_value') }}                       as purchase_currency,
-        device.category                                                                 as device_category,
-        device.operating_system                                                          as operating_system,
-        geo.country                                                                      as country_name,
-        nullif(lower(trim(collected_traffic_source.manual_source)), '')                  as source_raw,
+        {{ ga4_param('event_params', 'plan_id', 'string_value') }} as plan_id,
+        {{ ga4_param('event_params', 'transaction_id', 'string_value') }} as transaction_id,
+        cast({{ ga4_param('event_params', 'value', 'double_value') }} as numeric(18, 4)) as purchase_value,
+        {{ ga4_param('event_params', 'currency', 'string_value') }} as purchase_currency,
+        -- device, geo and collected_traffic_source are structs; sqlfluff reads struct.field as table.column
+        -- noqa: disable=RF01
+        device.category as device_category,
+        device.operating_system as operating_system,  -- noqa: AL09
+        geo.country as country_name,
+        nullif(lower(trim(collected_traffic_source.manual_source)), '') as source_raw,
         nullif(replace(lower(trim(collected_traffic_source.manual_medium)), '-', '_'), '') as medium,
-        collected_traffic_source.manual_campaign_name                                    as campaign,
-        collected_traffic_source.gclid                                                   as gclid
+        collected_traffic_source.manual_campaign_name as campaign,
+        collected_traffic_source.gclid
+        -- noqa: enable=RF01
     from source
 
 )
 
 select
     {{ dbt_utils.generate_surrogate_key(['user_pseudo_id', 'event_timestamp', 'event_name']) }} as event_key,
-    user_pseudo_id || '-' || cast(ga_session_id as varchar)                                       as session_key,
+    user_pseudo_id || '-' || cast(ga_session_id as varchar) as session_key,
     *
 from flattened

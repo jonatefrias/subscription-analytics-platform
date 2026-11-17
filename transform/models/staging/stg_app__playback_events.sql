@@ -21,7 +21,7 @@ select
     content_id,
     content_type,
     cast(replace(replace(played_at, 'T', ' '), 'Z', '') as timestamp) as played_at,
-    cast(watch_seconds as integer)                                   as watch_seconds
+    cast(watch_seconds as integer) as watch_seconds
 from deduplicated
 where delivery_rank = 1
-  and watch_seconds >= 0
+    and watch_seconds >= 0

@@ -19,7 +19,7 @@ select
     plans.months_per_period,
     plans.trial_days,
     current_prices.currency_code,
-    current_prices.list_price                                                   as current_list_price,
+    current_prices.list_price as current_list_price,
     cast(current_prices.list_price / plans.months_per_period as numeric(18, 4)) as current_monthly_equivalent
 from plans
 left join current_prices

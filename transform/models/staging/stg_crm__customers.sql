@@ -17,10 +17,10 @@ ranked as (
 
 select
     customer_id,
-    cast(created_at as timestamp)                    as created_at,
-    upper(trim(country))                             as country_code,
-    lower(signup_platform)                           as signup_platform,
-    coalesce(acquisition_channel, 'unknown')         as acquisition_channel,
-    cast(updated_at as timestamp)                    as profile_updated_at
+    cast(created_at as timestamp) as created_at,
+    upper(trim(country)) as country_code,
+    lower(signup_platform) as signup_platform,
+    coalesce(acquisition_channel, 'unknown') as acquisition_channel,
+    cast(updated_at as timestamp) as profile_updated_at
 from ranked
 where version_rank = 1

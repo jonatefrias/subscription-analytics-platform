@@ -38,8 +38,8 @@ active_at_month_end as (
         subscriptions.months_per_period
     from months
     inner join subscriptions
-        on  subscriptions.paid_from < months.snapshot_at
-        and (subscriptions.ended_at is null or subscriptions.ended_at > months.snapshot_at)
+        on subscriptions.paid_from < months.snapshot_at
+            and (subscriptions.ended_at is null or subscriptions.ended_at > months.snapshot_at)
 
 )
 
@@ -49,13 +49,15 @@ select
     active.customer_id,
     active.plan_id,
     prices.currency_code,
-    cast(prices.list_price / active.months_per_period as numeric(18, 4))                     as mrr_local,
-    cast(prices.list_price / active.months_per_period
-         / constant_fx.constant_units_per_usd as numeric(18, 4))                              as mrr_usd
+    cast(prices.list_price / active.months_per_period as numeric(18, 4)) as mrr_local,
+    cast(
+        prices.list_price / active.months_per_period
+        / constant_fx.constant_units_per_usd as numeric(18, 4)
+    ) as mrr_usd
 from active_at_month_end as active
 inner join prices
-    on  prices.plan_id = active.plan_id
-    and cast({{ dbt.dateadd('day', -1, 'active.snapshot_at') }} as date)
+    on prices.plan_id = active.plan_id
+        and cast({{ dbt.dateadd('day', -1, 'active.snapshot_at') }} as date)
         between prices.valid_from and prices.valid_to
 inner join constant_fx
     on constant_fx.currency_code = prices.currency_code

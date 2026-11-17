@@ -13,3 +13,7 @@ dagster-webserver==1.13.30
 protobuf==6.33.6
 grpcio-health-checking==1.81.2
 pytest==9.2.0
+sqlfluff==4.5.0
+sqlfluff-templater-dbt==4.5.0
+ruff==0.17.5
+anthropic==2.9.0
