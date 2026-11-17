@@ -6,6 +6,12 @@
         on_schema_change='append_new_columns'
     )
 }}
+{% if is_incremental() %}
+    {% set lookback_filter = "cast(played_at as date) >= (select "
+        ~ dbt.dateadd('day', -3, 'max(activity_date)') ~ " from " ~ this ~ ")" %}
+{% else %}
+    {% set lookback_filter = "true" %}
+{% endif %}
 -- Customer x day engagement. Incremental with a 3-day lookback because playback
 -- events arrive late (offline mobile playback, client retries).
 select
@@ -16,8 +22,7 @@ select
     cast(sum(watch_seconds) / 60.0 as numeric(18, 2)) as watch_minutes,
     cast(sum(case when content_type = 'live' then watch_seconds else 0 end) / 60.0 as numeric(18, 2)) as live_minutes
 from {{ ref('stg_app__playback_events') }}
-where played_at < {{ as_of_ts() }}
-    {% if is_incremental() %}
-        and cast(played_at as date) >= (select {{ dbt.dateadd('day', -3, 'max(activity_date)') }} from {{ this }})
-    {% endif %}
+where
+    played_at < {{ as_of_ts() }}
+    and {{ lookback_filter }}
 group by 1, 2
