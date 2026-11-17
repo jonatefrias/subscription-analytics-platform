@@ -97,9 +97,13 @@ def main() -> None:
     if not impacted:
         print("No dbt resources changed versus the base branch.")
         return
+    definitions = sorted(
+        {n["name"] for n in modified if n["resource_type"] in ("metric", "semantic_model", "saved_query")}
+    )
     print(
-        f"**{len(models(modified))} changed** · **{len(models(downstream))} downstream** · "
-        f"**{len(metrics)} metrics affected** · {len(tests)} tests in scope\n"
+        f"**{len(models(modified))} models changed** · **{len(definitions)} semantic definitions changed** · "
+        f"**{len(models(downstream))} downstream** · **{len(metrics)} metrics on affected models** · "
+        f"{len(tests)} tests in scope\n"
     )
     print("| Changed | Path |\n|---|---|")
     for n in sorted(modified, key=lambda n: n["original_file_path"]):
