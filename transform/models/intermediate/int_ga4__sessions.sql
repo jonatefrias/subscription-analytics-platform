@@ -13,7 +13,9 @@ first_event as (
     from (
         select
             events.*,
-            row_number() over (partition by session_key order by event_at, event_name) as event_rank
+            row_number()
+                over (partition by events.session_key order by events.event_at, events.event_name)
+                as event_rank
         from events
     ) as ranked
     where event_rank = 1
@@ -24,18 +26,18 @@ session_rollup as (
 
     select
         session_key,
-        min(event_at)                                                                as session_started_at,
-        max(event_at)                                                                as session_ended_at,
-        sum(case when event_name = 'page_view' then 1 else 0 end)                    as page_views,
-        coalesce(sum(engagement_time_msec), 0) / 1000.0                              as engagement_seconds,
-        max(case when event_name = 'view_paywall' then 1 else 0 end) = 1             as reached_paywall,
-        max(case when event_name = 'select_plan' then 1 else 0 end) = 1              as selected_plan,
-        max(case when event_name = 'sign_up' then 1 else 0 end) = 1                 as signed_up,
-        max(case when event_name = 'start_trial' then 1 else 0 end) = 1              as started_trial,
-        max(case when event_name = 'purchase' then 1 else 0 end) = 1                 as purchased,
-        max(case when event_name = 'login' then 1 else 0 end) = 1                    as logged_in,
-        max(user_id)                                                                 as session_user_id,
-        sum(case when event_name = 'purchase' then purchase_value else 0 end)        as purchase_value
+        min(event_at) as session_started_at,
+        max(event_at) as session_ended_at,
+        sum(case when event_name = 'page_view' then 1 else 0 end) as page_views,
+        coalesce(sum(engagement_time_msec), 0) / 1000.0 as engagement_seconds,
+        max(case when event_name = 'view_paywall' then 1 else 0 end) = 1 as reached_paywall,
+        max(case when event_name = 'select_plan' then 1 else 0 end) = 1 as selected_plan,
+        max(case when event_name = 'sign_up' then 1 else 0 end) = 1 as signed_up,
+        max(case when event_name = 'start_trial' then 1 else 0 end) = 1 as started_trial,
+        max(case when event_name = 'purchase' then 1 else 0 end) = 1 as purchased,
+        max(case when event_name = 'login' then 1 else 0 end) = 1 as logged_in,
+        max(user_id) as session_user_id,
+        sum(case when event_name = 'purchase' then purchase_value else 0 end) as purchase_value
     from events
     group by 1
 
@@ -61,19 +63,20 @@ select
     session_rollup.session_started_at,
     session_rollup.session_ended_at,
     first_event.device_category,
-    countries.country_code                                            as market_code,
-    coalesce(aliases.canonical_source, first_event.source_raw, '(direct)') as source,
-    coalesce(first_event.medium, '(none)')                            as medium,
+    countries.country_code as market_code,
+    -- `source` is GA4's own name for the field, kept on purpose
+    coalesce(aliases.canonical_source, first_event.source_raw, '(direct)') as source,  -- noqa: RF04
+    coalesce(first_event.medium, '(none)') as medium,
     first_event.campaign,
     case
-        when first_event.medium = 'paid_social'                       then 'paid_social'
-        when first_event.medium = 'cpc'                               then 'paid_search'
-        when first_event.medium = 'organic'                           then 'organic'
-        when first_event.medium = 'referral'                          then 'referral'
-        when first_event.medium = 'partner'                           then 'partner'
+        when first_event.medium = 'paid_social' then 'paid_social'
+        when first_event.medium = 'cpc' then 'paid_search'
+        when first_event.medium = 'organic' then 'organic'
+        when first_event.medium = 'referral' then 'referral'
+        when first_event.medium = 'partner' then 'partner'
         when first_event.source_raw is null and first_event.medium is null then 'direct'
         else 'other'
-    end                                                               as channel,
+    end as channel,
     session_rollup.page_views,
     session_rollup.engagement_seconds,
     session_rollup.page_views >= 2 or session_rollup.engagement_seconds >= 10 as is_engaged,

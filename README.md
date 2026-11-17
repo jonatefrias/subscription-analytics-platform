@@ -32,7 +32,10 @@ a separate profile.
 | Metric layer reconciled against the marts in CI (34 months x 11 metrics, quarterly snapshots) | `scripts/check_semantic_layer.py` |
 | Orchestration with Dagster: raw extracts and every dbt model as assets, dbt tests as asset checks, freshness policies, daily schedule | `orchestration/definitions.py` |
 | End-to-end test of the scheduled job on a throw-away copy of the repo | `tests/test_orchestration.py` |
-| CI on every pull request | `.github/workflows/ci.yml` |
+| Linting: sqlfluff rendered through dbt for SQL, ruff for Python | `transform/.sqlfluff`, `pyproject.toml` |
+| Pull-request impact report: changed models, downstream models and affected metrics (`state:modified+`) | `scripts/impact_report.py` |
+| AI review against written review guidelines, opt-in and free by default | `scripts/ai_review.py`, `docs/review_guidelines.md` |
+| CI on every pull request: lint, build/test/reconcile, impact report + AI review | `.github/workflows/ci.yml` |
 
 ## Architecture
 
@@ -80,6 +83,8 @@ make build          # dbt deps + dbt build: 33 models, 3 seeds, 99 data tests, 2
 make metrics        # validate the semantic layer and reconcile it with the marts
 make orchestrate    # Dagster UI with the asset graph at http://localhost:3000
 make test-orchestration  # run the daily_refresh job end to end on a temp copy
+make lint           # sqlfluff + ruff
+make review         # print the AI review prompt for the current branch (no API call)
 make docs           # dbt docs site with lineage
 ```
 
@@ -148,8 +153,9 @@ transform/            dbt project
   seeds/              business calendar, GA4 source aliases, country reference
 orchestration/        Dagster definitions: assets, checks, job, schedule
 tests/                orchestration tests (pytest)
-scripts/              semantic-layer reconciliation check (runs in CI and as an asset check)
+scripts/              semantic-layer reconciliation, PR impact report, AI review
 docs/decisions.md     design decisions and trade-offs
+docs/review_guidelines.md  what every pull request is reviewed against
 ```
 
 ## Roadmap
@@ -158,7 +164,8 @@ docs/decisions.md     design decisions and trade-offs
 - [x] Web analytics: GA4 export, sessions, identity stitching, attribution, tracking coverage
 - [x] Semantic layer (MetricFlow) with MRR, churn, ARPU, CAC and conversion metrics, reconciled in CI
 - [x] Orchestration with Dagster (dbt assets, asset checks, freshness policies, daily schedule), tested end to end in CI
-- [ ] Snowflake deployment and slim CI (`state:modified+`)
+- [x] Linting, PR impact report (`state:modified+` with affected metrics) and AI review in CI
+- [ ] Snowflake deployment and slim CI (`dbt build --select state:modified+ --defer`)
 - [ ] AI layer: an agent that answers questions through the semantic layer (MCP)
 - [ ] Experiment readout notebook: power analysis, CUPED, confidence intervals
 

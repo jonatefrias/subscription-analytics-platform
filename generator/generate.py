@@ -39,7 +39,6 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import pyarrow.parquet as pq
-
 from ga4 import build_ga4_events
 
 START = dt.date(2024, 1, 1)
@@ -71,9 +70,20 @@ MARKET_CAC_FACTOR = {"US": 1.6, "ES": 1.3, "MX": 0.8, "AR": 0.6, "CL": 0.6, "CO"
 SIGNUP_SEASONALITY = {1: 1.1, 2: 1.2, 3: 1.2, 4: 1.1, 5: 1.0, 6: 0.6, 7: 0.6, 8: 1.3, 9: 1.1, 10: 1.0, 11: 1.0, 12: 0.8}
 CHURN_SEASONALITY = {6: 1.7, 7: 1.6, 12: 1.2}
 BIG_MATCH_DAYS = {
-    dt.date(2024, 3, 17), dt.date(2024, 5, 25), dt.date(2024, 8, 17), dt.date(2024, 10, 27), dt.date(2024, 12, 8),
-    dt.date(2025, 3, 16), dt.date(2025, 5, 31), dt.date(2025, 8, 16), dt.date(2025, 10, 26), dt.date(2025, 12, 7),
-    dt.date(2026, 3, 15), dt.date(2026, 5, 30), dt.date(2026, 8, 15), dt.date(2026, 10, 25),
+    dt.date(2024, 3, 17),
+    dt.date(2024, 5, 25),
+    dt.date(2024, 8, 17),
+    dt.date(2024, 10, 27),
+    dt.date(2024, 12, 8),
+    dt.date(2025, 3, 16),
+    dt.date(2025, 5, 31),
+    dt.date(2025, 8, 16),
+    dt.date(2025, 10, 26),
+    dt.date(2025, 12, 7),
+    dt.date(2026, 3, 15),
+    dt.date(2026, 5, 30),
+    dt.date(2026, 8, 15),
+    dt.date(2026, 10, 25),
 }
 EXPERIMENT = {
     "experiment_id": "paywall_annual_highlight",
@@ -124,7 +134,7 @@ class Simulator:
     # ----------------------------------------------------------------- signups
     def daily_signups(self, d: dt.date) -> int:
         years = (d - START).days / 365.25
-        lam = 55 * self.scale * (1.25 ** years) * SIGNUP_SEASONALITY[d.month]
+        lam = 55 * self.scale * (1.25**years) * SIGNUP_SEASONALITY[d.month]
         if d.weekday() >= 5:
             lam *= 1.4
         if d in BIG_MATCH_DAYS:
@@ -163,12 +173,14 @@ class Simulator:
         conversion_shift = 0.0
         if platform == "web" and EXPERIMENT["start"] <= d <= EXPERIMENT["end"]:
             variant = "annual_highlight" if rng.random() < 0.5 else "control"
-            self.out.assignments.append({
-                "experiment_id": EXPERIMENT["experiment_id"],
-                "customer_id": customer["customer_id"],
-                "variant": variant,
-                "assigned_at": created_at,
-            })
+            self.out.assignments.append(
+                {
+                    "experiment_id": EXPERIMENT["experiment_id"],
+                    "customer_id": customer["customer_id"],
+                    "variant": variant,
+                    "assigned_at": created_at,
+                }
+            )
             if variant == "annual_highlight":
                 annual_share, conversion_shift = 0.26, -0.03
         period = "annual" if rng.random() < annual_share else "monthly"
@@ -185,13 +197,15 @@ class Simulator:
         h *= {"paid_social": 1.25, "partner": 1.15, "referral": 0.8}.get(customer["acquisition_channel"], 1.0)
         h *= 1.4 if tenure <= 3 else (0.7 if tenure > 12 else 1.0)
         h *= 1.3 if customer["big_match_signup"] and tenure <= 3 else 1.0
-        if customer["country"] in NEW_MONTHLY_PRICE and PRICE_INCREASE_DATE <= billing_date < add_months(PRICE_INCREASE_DATE, 2):
+        price_shock = PRICE_INCREASE_DATE <= billing_date < add_months(PRICE_INCREASE_DATE, 2)
+        if customer["country"] in NEW_MONTHLY_PRICE and price_shock:
             h *= 1.5
         h *= customer["engagement"] ** -0.5
         return min(h, 0.9)
 
-    def subscribe(self, customer: dict, start: dt.date, period: str, trial: bool,
-                  conversion_shift: float = 0.0, depth: int = 0) -> None:
+    def subscribe(
+        self, customer: dict, start: dt.date, period: str, trial: bool, conversion_shift: float = 0.0, depth: int = 0
+    ) -> None:
         if start > END or depth > 6:
             return
         rng = self.rng
@@ -222,7 +236,7 @@ class Simulator:
             p_convert += {"paid_social": -0.10, "referral": 0.10}.get(customer["acquisition_channel"], 0.0)
             p_convert += 0.05 if customer["signup_platform"] == "tv" else 0.0
             if rng.random() > p_convert:
-                cancel_day = start + dt.timedelta(days=int(rng.choice(7, p=[.05, .05, .05, .1, .15, .25, .35])))
+                cancel_day = start + dt.timedelta(days=int(rng.choice(7, p=[0.05, 0.05, 0.05, 0.1, 0.15, 0.25, 0.35])))
                 self.end(sub, cancel_day, trial_end, "trial_not_converted")
                 self.access(customer, start, trial_end)
                 if rng.random() < 0.06:
@@ -281,24 +295,27 @@ class Simulator:
         period = "annual" if self.rng.random() < 0.10 else "monthly"
         self.subscribe(customer, after + dt.timedelta(days=gap), period, trial=False, depth=depth + 1)
 
-    def payment(self, sub: dict, on: dt.date, amount: float, status: str, attempt: int,
-                period_start: dt.date | None = None) -> None:
+    def payment(
+        self, sub: dict, on: dt.date, amount: float, status: str, attempt: int, period_start: dt.date | None = None
+    ) -> None:
         self.pay_seq += 1
         refunded_at = None
         if status == "paid" and self.rng.random() < 0.008:
             refunded_at = ts(on + dt.timedelta(days=int(self.rng.integers(1, 6))), self.rng)
-        self.out.payments.append({
-            "payment_id": f"p_{self.pay_seq:08d}",
-            "subscription_id": sub["subscription_id"],
-            "attempt": attempt,
-            "status": status,
-            "amount": amount,
-            "currency": MARKETS[sub["plan_id"].split("_")[0].upper()][0],
-            "billed_at": ts(on, self.rng),
-            "period_start": period_start or on,
-            "refunded_at": refunded_at,
-            "provider": sub["payment_provider"],
-        })
+        self.out.payments.append(
+            {
+                "payment_id": f"p_{self.pay_seq:08d}",
+                "subscription_id": sub["subscription_id"],
+                "attempt": attempt,
+                "status": status,
+                "amount": amount,
+                "currency": MARKETS[sub["plan_id"].split("_")[0].upper()][0],
+                "billed_at": ts(on, self.rng),
+                "period_start": period_start or on,
+                "refunded_at": refunded_at,
+                "provider": sub["payment_provider"],
+            }
+        )
 
     def access(self, customer: dict, start: dt.date, end: dt.date) -> None:
         self.out.access.append((customer["customer_id"], start, min(end, END), customer["engagement"]))
@@ -310,21 +327,38 @@ def build_plans() -> tuple[pd.DataFrame, pd.DataFrame]:
     for market, (currency, _, monthly, annual) in MARKETS.items():
         for period, price in (("monthly", monthly), ("annual", annual)):
             plan_id = f"{market.lower()}_{period}"
-            plans.append({
-                "plan_id": plan_id,
-                "plan_name": f"Matchday+ {period.title()} ({market})",
-                "market": market,
-                "billing_period": period,
-                "trial_days": 7 if period == "monthly" else 0,
-            })
+            plans.append(
+                {
+                    "plan_id": plan_id,
+                    "plan_name": f"Matchday+ {period.title()} ({market})",
+                    "market": market,
+                    "billing_period": period,
+                    "trial_days": 7 if period == "monthly" else 0,
+                }
+            )
             if period == "monthly" and market in NEW_MONTHLY_PRICE:
-                prices.append({"plan_id": plan_id, "currency": currency, "price": price,
-                               "valid_from": START, "valid_to": PRICE_INCREASE_DATE - dt.timedelta(days=1)})
-                prices.append({"plan_id": plan_id, "currency": currency, "price": NEW_MONTHLY_PRICE[market],
-                               "valid_from": PRICE_INCREASE_DATE, "valid_to": None})
+                prices.append(
+                    {
+                        "plan_id": plan_id,
+                        "currency": currency,
+                        "price": price,
+                        "valid_from": START,
+                        "valid_to": PRICE_INCREASE_DATE - dt.timedelta(days=1),
+                    }
+                )
+                prices.append(
+                    {
+                        "plan_id": plan_id,
+                        "currency": currency,
+                        "price": NEW_MONTHLY_PRICE[market],
+                        "valid_from": PRICE_INCREASE_DATE,
+                        "valid_to": None,
+                    }
+                )
             else:
-                prices.append({"plan_id": plan_id, "currency": currency, "price": price,
-                               "valid_from": START, "valid_to": None})
+                prices.append(
+                    {"plan_id": plan_id, "currency": currency, "price": price, "valid_from": START, "valid_to": None}
+                )
     return pd.DataFrame(plans), pd.DataFrame(prices)
 
 
@@ -360,16 +394,19 @@ def build_playback(access: list, rng: np.random.Generator) -> pd.DataFrame:
     content = rng.choice(["live", "vod", "highlight"], size=k, p=[0.45, 0.30, 0.25])
     mean_seconds = np.select([content == "live", content == "vod"], [3600, 1500], 180)
     watch = (rng.lognormal(0, 0.7, k) * mean_seconds * 0.6).round()
-    played_at = ev["played_day"].to_numpy().astype("datetime64[s]") + rng.integers(0, 86_400, k).astype("timedelta64[s]")
-    out = pd.DataFrame({
-        "event_id": [f"e_{i:09d}" for i in range(1, k + 1)],
-        "customer_id": ev["customer_id"],
-        "event_type": "play_end",
-        "content_type": content,
-        "content_id": [f"{t[:1]}_{i:05d}" for t, i in zip(content, rng.integers(1, 4000, k))],
-        "played_at": pd.Series(played_at).dt.strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "watch_seconds": watch,
-    })
+    seconds = rng.integers(0, 86_400, k).astype("timedelta64[s]")
+    played_at = ev["played_day"].to_numpy().astype("datetime64[s]") + seconds
+    out = pd.DataFrame(
+        {
+            "event_id": [f"e_{i:09d}" for i in range(1, k + 1)],
+            "customer_id": ev["customer_id"],
+            "event_type": "play_end",
+            "content_type": content,
+            "content_id": [f"{t[:1]}_{i:05d}" for t, i in zip(content, rng.integers(1, 4000, k), strict=True)],
+            "played_at": pd.Series(played_at).dt.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "watch_seconds": watch,
+        }
+    )
     return out
 
 
@@ -380,12 +417,14 @@ def build_spend(customers: pd.DataFrame, rng: np.random.Generator) -> pd.DataFra
     cac = g["acquisition_channel"].map(PAID_CHANNEL_CAC_USD) * g["country"].map(MARKET_CAC_FACTOR)
     g["spend_usd"] = (g["signups"] * cac * rng.lognormal(0, 0.25, len(g))).round(2)
     return g.rename(columns={"country": "market", "acquisition_channel": "channel"})[
-        ["spend_date", "market", "channel", "spend_usd"]]
+        ["spend_date", "market", "channel", "spend_usd"]
+    ]
 
 
 # ------------------------------------------------------------------- quirks
-def inject_quirks(customers: pd.DataFrame, playback: pd.DataFrame, payments: pd.DataFrame,
-                  rng: np.random.Generator) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+def inject_quirks(
+    customers: pd.DataFrame, playback: pd.DataFrame, payments: pd.DataFrame, rng: np.random.Generator
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     customers = customers.drop(columns=["engagement", "big_match_signup"]).copy()
     customers["updated_at"] = customers["created_at"]
 

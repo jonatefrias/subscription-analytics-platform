@@ -3,7 +3,7 @@ PY      := .venv/bin/python
 DBT     := cd transform && DBT_PROFILES_DIR=. ../.venv/bin/dbt
 SCALE   ?= 1.0
 
-.PHONY: setup data deps build test metrics orchestrate test-orchestration docs clean
+.PHONY: setup data deps build test metrics orchestrate test-orchestration lint review docs clean
 
 setup:            ## create the virtualenv and install pinned dependencies
 	python3.11 -m venv .venv && .venv/bin/pip install -q -r requirements.txt
@@ -28,6 +28,13 @@ orchestrate:      ## open the Dagster UI with the full asset graph (http://local
 
 test-orchestration: ## load the code location and run daily_refresh end to end on a temp copy
 	.venv/bin/python -m pytest
+
+lint:             ## sqlfluff (SQL through dbt) and ruff (Python)
+	.venv/bin/ruff check generator scripts orchestration tests && .venv/bin/ruff format --check generator scripts orchestration tests
+	cd transform && DBT_PROFILES_DIR=. ../.venv/bin/sqlfluff lint models tests macros
+
+review:           ## print the AI review prompt for this branch (no API call); drop --dry-run to send it
+	.venv/bin/python scripts/ai_review.py --base origin/main --dry-run
 
 docs:             ## generate and serve the dbt docs site
 	$(DBT) docs generate && $(DBT) docs serve
