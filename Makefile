@@ -30,7 +30,7 @@ test-orchestration: ## load the code location and run daily_refresh end to end o
 	.venv/bin/python -m pytest
 
 lint:             ## sqlfluff (SQL through dbt) and ruff (Python)
-	.venv/bin/ruff check generator scripts orchestration tests && .venv/bin/ruff format --check generator scripts orchestration tests
+	.venv/bin/ruff check generator scripts orchestration semantic_agent tests && .venv/bin/ruff format --check generator scripts orchestration semantic_agent tests
 	cd transform && DBT_PROFILES_DIR=. ../.venv/bin/sqlfluff lint models tests macros
 
 review:           ## print the AI review prompt for this branch (no API call); drop --dry-run to send it

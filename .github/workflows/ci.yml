@@ -23,8 +23,8 @@ jobs:
       - run: pip install -r requirements.txt
       - name: ruff (Python)
         run: |
-          ruff check generator scripts orchestration tests
-          ruff format --check generator scripts orchestration tests
+          ruff check generator scripts orchestration semantic_agent tests
+          ruff format --check generator scripts orchestration semantic_agent tests
       - name: sqlfluff (SQL, rendered through dbt)
         working-directory: transform
         run: |
