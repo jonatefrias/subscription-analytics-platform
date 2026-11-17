@@ -31,8 +31,9 @@ def load_definitions(project_root: Path, duckdb_path: Path):
 def repo_copy(tmp_path: Path) -> Path:
     for folder in ("generator", "scripts", "orchestration"):
         shutil.copytree(REPO / folder, tmp_path / folder)
-    shutil.copytree(REPO / "transform", tmp_path / "transform",
-                    ignore=shutil.ignore_patterns("target", "logs", ".user.yml"))
+    shutil.copytree(
+        REPO / "transform", tmp_path / "transform", ignore=shutil.ignore_patterns("target", "logs", ".user.yml")
+    )
     return tmp_path
 
 

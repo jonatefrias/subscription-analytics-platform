@@ -46,8 +46,7 @@ def mf(*args: str) -> list[dict]:
     with tempfile.NamedTemporaryFile(suffix=".csv", delete=False) as tmp:
         out = tmp.name
     env = {**os.environ, "DBT_PROFILES_DIR": os.environ.get("DBT_PROFILES_DIR", ".")}
-    subprocess.run(["mf", "query", *args, "--csv", out], cwd=TRANSFORM, env=env, check=True,
-                   stdout=subprocess.DEVNULL)
+    subprocess.run(["mf", "query", *args, "--csv", out], cwd=TRANSFORM, env=env, check=True, stdout=subprocess.DEVNULL)
     with open(out, newline="") as f:
         return list(csv.DictReader(f))
 
@@ -70,7 +69,7 @@ def main() -> int:
     con = duckdb.connect(DB_PATH, read_only=True)
     cur = con.execute("select * from finance.rpt_mrr_bridge order by month_start")
     cols = [d[0] for d in cur.description]
-    bridge = {str(row[0])[:10]: dict(zip(cols, row)) for row in cur.fetchall()}
+    bridge = {str(row[0])[:10]: dict(zip(cols, row, strict=True)) for row in cur.fetchall()}
 
     for row in monthly:
         month = row["metric_time__month"][:10]
@@ -83,7 +82,8 @@ def main() -> int:
             if column is None:
                 expected = None
                 if mart["opening_mrr_usd"]:
-                    expected = -float(mart["churned_mrr_usd"] + mart["contraction_mrr_usd"]) / float(mart["opening_mrr_usd"])
+                    lost = float(mart["churned_mrr_usd"] + mart["contraction_mrr_usd"])
+                    expected = -lost / float(mart["opening_mrr_usd"])
             else:
                 expected = None if mart[column] is None else float(mart[column])
             if not close(value, expected, 1e-6):
@@ -102,8 +102,10 @@ def main() -> int:
         print(f"Semantic layer does NOT reconcile ({len(errors)} differences):")
         print("\n".join(f"  - {e}" for e in errors[:30]))
         return 1
-    print(f"Semantic layer reconciles: {len(monthly)} months x {len(PAIRS)} metrics, "
-          f"{len(quarterly)} quarters of snapshot MRR.")
+    print(
+        f"Semantic layer reconciles: {len(monthly)} months x {len(PAIRS)} metrics, "
+        f"{len(quarterly)} quarters of snapshot MRR."
+    )
     return 0
 
 

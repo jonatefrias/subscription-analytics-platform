@@ -5,34 +5,51 @@ on:
   push:
     branches: [main]
 
+env:
+  DBT_TARGET: ci
+  DBT_PROFILES_DIR: .
+  DUCKDB_PATH: /tmp/ci_warehouse.duckdb
+
 jobs:
-  build:
+  lint:
+    name: Lint (sqlfluff + ruff)
     runs-on: ubuntu-24.04  # pinned: ubuntu-latest moves to a new image on its own schedule
-    env:
-      DBT_TARGET: ci
-      DBT_PROFILES_DIR: .
-      DUCKDB_PATH: /tmp/ci_warehouse.duckdb
     steps:
       - uses: actions/checkout@v5
-
       - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
           cache: pip
+      - run: pip install -r requirements.txt
+      - name: ruff (Python)
+        run: |
+          ruff check generator scripts orchestration tests
+          ruff format --check generator scripts orchestration tests
+      - name: sqlfluff (SQL, rendered through dbt)
+        working-directory: transform
+        run: |
+          dbt deps
+          sqlfluff lint models tests macros
 
-      - name: Install dependencies
-        run: pip install -r requirements.txt
+  build:
+    name: Build, test and reconcile
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r requirements.txt
 
       - name: Generate a small synthetic dataset
         run: python generator/generate.py --out data/raw --scale 0.2 --seed 7
 
-      - name: dbt deps
-        working-directory: transform
-        run: dbt deps
-
       - name: dbt build (models, seeds, data tests, unit tests, contracts)
         working-directory: transform
-        run: dbt build --fail-fast
+        run: |
+          dbt deps
+          dbt build --fail-fast
 
       - name: Validate the semantic layer (definitions and warehouse)
         working-directory: transform
@@ -44,3 +61,53 @@ jobs:
 
       - name: Orchestration tests (Dagster code location + end-to-end daily_refresh job)
         run: python -m pytest
+
+  pr-review:
+    name: Impact report and AI review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      # The AI review only runs when this repository secret exists; without it the job costs nothing.
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r requirements.txt
+
+      - name: Parse the base branch (state for comparison)
+        run: |
+          git worktree add ../base "origin/${{ github.base_ref }}"
+          cd ../base/transform
+          dbt deps
+          dbt --quiet parse
+
+      - name: dbt impact report (state:modified+ and affected metrics)
+        working-directory: transform
+        run: |
+          dbt deps
+          dbt --quiet parse
+          python ../scripts/impact_report.py --state ../../base/transform/target > ../impact.md
+          cat ../impact.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: AI review against docs/review_guidelines.md
+        if: env.ANTHROPIC_API_KEY != ''
+        continue-on-error: true  # a second pair of eyes, never a merge gate
+        run: python scripts/ai_review.py --base "origin/${{ github.base_ref }}" --impact impact.md > review.md
+
+      - name: Post or update the PR comment
+        run: |
+          {
+            echo "<!-- ci-pr-review -->"
+            cat impact.md
+            if [ -s review.md ]; then echo; echo "---"; cat review.md; fi
+          } > comment.md
+          gh pr comment "${{ github.event.pull_request.number }}" --body-file comment.md --edit-last --create-if-none

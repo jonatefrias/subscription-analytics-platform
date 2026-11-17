@@ -13,7 +13,6 @@ Operations
 Run locally from the repo root:  dagster dev -m orchestration.definitions
 """
 
-
 import os
 import subprocess
 import sys
@@ -75,17 +74,28 @@ RAW_FRESHNESS = FreshnessPolicy.time_window(fail_window=timedelta(hours=26), war
 
 
 @multi_asset(
-    specs=[AssetSpec(["raw", name], description=desc, group_name="raw", kinds={"parquet"},
-                     freshness_policy=RAW_FRESHNESS)
-           for name, desc in RAW_TABLES.items()],
+    specs=[
+        AssetSpec(["raw", name], description=desc, group_name="raw", kinds={"parquet"}, freshness_policy=RAW_FRESHNESS)
+        for name, desc in RAW_TABLES.items()
+    ],
 )
 def raw_sources(context: AssetExecutionContext, config: GeneratorConfig):
     """Lands the raw extracts. In production this would be the ingestion tool (Fivetran,
     Airbyte, a Lambda); here the synthetic generator plays that role."""
     subprocess.run(
-        [sys.executable, str(ROOT / "generator" / "generate.py"), "--out", str(RAW_DIR),
-         "--scale", str(config.scale), "--seed", str(config.seed)],
-        check=True, capture_output=True, text=True,
+        [
+            sys.executable,
+            str(ROOT / "generator" / "generate.py"),
+            "--out",
+            str(RAW_DIR),
+            "--scale",
+            str(config.scale),
+            "--seed",
+            str(config.seed),
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
     )
     for name in RAW_TABLES:
         rows = pq.read_metadata(RAW_DIR / f"{name}.parquet").num_rows
@@ -117,13 +127,16 @@ def analytics_dbt_assets(context: AssetExecutionContext, dbt: DbtCliResource):
 @asset_check(
     asset=get_asset_key_for_model([analytics_dbt_assets], "rpt_mrr_bridge"),
     description="Semantic-layer metrics must equal the MRR bridge, every month, and quarterly MRR "
-                "must equal the closing month (snapshot measures).",
+    "must equal the closing month (snapshot measures).",
     blocking=False,
 )
 def semantic_layer_reconciles() -> AssetCheckResult:
     result = subprocess.run(
         [sys.executable, str(ROOT / "scripts" / "check_semantic_layer.py")],
-        cwd=TRANSFORM_DIR, capture_output=True, text=True,
+        cwd=TRANSFORM_DIR,
+        capture_output=True,
+        text=True,
+        check=False,  # a failure is the check result
         env={**os.environ, "DBT_PROFILES_DIR": str(TRANSFORM_DIR)},
     )
     output = (result.stdout + result.stderr).strip()
