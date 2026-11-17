@@ -17,3 +17,4 @@ sqlfluff==4.5.0
 sqlfluff-templater-dbt==4.5.0
 ruff==0.17.5
 anthropic==2.9.0
+mcp==2.3.0

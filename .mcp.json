@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "subscription-metrics": {
+      "command": ".venv/bin/python",
+      "args": ["-m", "semantic_agent"],
+      "env": {
+        "DBT_PROFILES_DIR": "transform"
+      }
+    }
+  }
+}
