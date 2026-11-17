@@ -86,3 +86,21 @@ MRR churn rate. Hence `fill_nulls_with: 0` on every flow metric.
 The dbt Semantic Layer API (JDBC/GraphQL for BI tools) is a paid dbt Cloud feature. The
 definitions here are standard dbt YAML, so they would work there unchanged; locally they are
 validated and queried with the open-source `mf` CLI, which is enough to prove they are correct.
+
+## 17. Dagster with software-defined assets, not a task DAG
+The unit of work is the table, not the task. Each raw extract and each dbt model is an asset, so
+lineage, run history and data checks hang off the thing people care about. dagster-dbt reads the
+dbt manifest, so dbt stays the single source of model dependencies; nothing is declared twice.
+Every dbt test shows up as an asset check, and the semantic-layer reconciliation is one more check
+on `rpt_mrr_bridge`. In a team that already runs Airflow, the same split applies: the
+orchestrator schedules and observes, dbt owns the transformation graph.
+
+## 18. Freshness is a policy on the raw assets
+Raw extracts carry a freshness policy: warn after 24 hours without a refresh, fail after 26. That
+is the contract with the ingestion side. Downstream models inherit staleness through lineage, so
+they do not need their own policies.
+
+## 19. The orchestration is tested end to end, in isolation
+`tests/test_orchestration.py` copies the repo to a temp folder, points `PROJECT_ROOT` and the
+warehouse there, and runs the real `daily_refresh` job: generator, `dbt build`, every asset check.
+It proves the scheduled job works as a whole without touching local data, and it runs in CI.

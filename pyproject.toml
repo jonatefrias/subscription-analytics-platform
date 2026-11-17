@@ -1,0 +1,11 @@
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-p no:cacheprovider"
+filterwarnings = [
+    # raised inside third-party packages, not by this project's code
+    "ignore::DeprecationWarning:dagster_dbt.*",
+    "ignore::DeprecationWarning:sqlglotrs.*",
+]
+
+[tool.dagster]
+module_name = "orchestration.definitions"

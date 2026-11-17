@@ -41,3 +41,6 @@ jobs:
       - name: Reconcile semantic-layer metrics with the marts
         working-directory: transform
         run: python ../scripts/check_semantic_layer.py
+
+      - name: Orchestration tests (Dagster code location + end-to-end daily_refresh job)
+        run: python -m pytest

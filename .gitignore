@@ -7,3 +7,5 @@ transform/logs/
 logs/
 .user.yml
 .DS_Store
+.tmp_dagster_home*/
+.dagster/

@@ -30,6 +30,8 @@ a separate profile.
 | Tracking coverage vs the CRM (consent gap) with a warn-level test | `rpt_web_tracking_coverage`, `tests/warn_ga4_tracking_coverage.sql` |
 | Semantic layer (MetricFlow): 30 metrics, snapshot (semi-additive) MRR, ratios defined once | `models/semantic/` |
 | Metric layer reconciled against the marts in CI (34 months x 11 metrics, quarterly snapshots) | `scripts/check_semantic_layer.py` |
+| Orchestration with Dagster: raw extracts and every dbt model as assets, dbt tests as asset checks, freshness policies, daily schedule | `orchestration/definitions.py` |
+| End-to-end test of the scheduled job on a throw-away copy of the repo | `tests/test_orchestration.py` |
 | CI on every pull request | `.github/workflows/ci.yml` |
 
 ## Architecture
@@ -65,6 +67,8 @@ flowchart LR
         sl[semantic models<br/>metrics, saved queries]
     end
     Sources --> Staging --> Intermediate --> Marts --> Semantic
+    dag(["Dagster: daily_refresh 06:00 UTC<br/>assets, asset checks, freshness"]) -.orchestrates.-> Sources
+    dag -.-> Marts
 ```
 
 ## Quickstart
@@ -74,6 +78,8 @@ make setup          # virtualenv + pinned dependencies (Python 3.11)
 make data           # ~95k customers, 6M playback events, 1.4M GA4 events (SCALE=0.2 for a quick run)
 make build          # dbt deps + dbt build: 33 models, 3 seeds, 99 data tests, 2 unit tests
 make metrics        # validate the semantic layer and reconcile it with the marts
+make orchestrate    # Dagster UI with the asset graph at http://localhost:3000
+make test-orchestration  # run the daily_refresh job end to end on a temp copy
 make docs           # dbt docs site with lineage
 ```
 
@@ -140,7 +146,9 @@ transform/            dbt project
   models/semantic/    semantic models, metrics and saved queries (MetricFlow)
   tests/              singular reconciliation tests
   seeds/              business calendar, GA4 source aliases, country reference
-scripts/              semantic-layer reconciliation check (runs in CI)
+orchestration/        Dagster definitions: assets, checks, job, schedule
+tests/                orchestration tests (pytest)
+scripts/              semantic-layer reconciliation check (runs in CI and as an asset check)
 docs/decisions.md     design decisions and trade-offs
 ```
 
@@ -149,7 +157,7 @@ docs/decisions.md     design decisions and trade-offs
 - [x] Synthetic sources, staging, marts, contracts, unit and reconciliation tests, CI
 - [x] Web analytics: GA4 export, sessions, identity stitching, attribution, tracking coverage
 - [x] Semantic layer (MetricFlow) with MRR, churn, ARPU, CAC and conversion metrics, reconciled in CI
-- [ ] Orchestration with Dagster (dbt assets, schedules, freshness checks)
+- [x] Orchestration with Dagster (dbt assets, asset checks, freshness policies, daily schedule), tested end to end in CI
 - [ ] Snowflake deployment and slim CI (`state:modified+`)
 - [ ] AI layer: an agent that answers questions through the semantic layer (MCP)
 - [ ] Experiment readout notebook: power analysis, CUPED, confidence intervals
