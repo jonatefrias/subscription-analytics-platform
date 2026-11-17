@@ -5,4 +5,4 @@ from {{ ref('stg_ga4__events') }} as events
 left join {{ ref('dim_customers') }} as customers
     on customers.customer_id = events.user_id
 where events.event_name = 'sign_up'
-  and customers.customer_id is null
+    and customers.customer_id is null

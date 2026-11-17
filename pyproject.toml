@@ -9,3 +9,11 @@ filterwarnings = [
 
 [tool.dagster]
 module_name = "orchestration.definitions"
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+# pycodestyle, pyflakes, import order, pyupgrade, bugbear, subprocess without check=
+select = ["E", "F", "I", "UP", "B", "PLW1510"]

@@ -16,9 +16,9 @@ successful_charges as (
 
     select
         subscription_id,
-        min(period_start)                                as first_paid_period_start,
-        count(*)                                         as paid_charges,
-        sum(amount_usd)                                  as gross_revenue_usd,
+        min(period_start) as first_paid_period_start,
+        count(*) as paid_charges,
+        sum(amount_usd) as gross_revenue_usd,
         sum(case when is_refunded then amount_usd else 0 end) as refunded_usd
     from {{ ref('int_payments__converted') }}
     where payment_status = 'paid'
@@ -33,11 +33,11 @@ sequenced as (
         row_number() over (
             partition by subscriptions.customer_id
             order by subscriptions.started_at, subscriptions.subscription_id
-        )                                                                         as subscription_number,
+        ) as subscription_number,
         lag(subscriptions.cancel_reason) over (
             partition by subscriptions.customer_id
             order by subscriptions.started_at, subscriptions.subscription_id
-        )                                                                         as previous_cancel_reason
+        ) as previous_cancel_reason
     from subscriptions
 
 )
@@ -56,21 +56,21 @@ select
     sequenced.ended_at,
     sequenced.cancel_reason,
     sequenced.subscription_number,
-    sequenced.trial_end_at is not null                                            as had_trial,
-    charges.first_paid_period_start is not null                                   as has_paid,
-    cast(charges.first_paid_period_start as timestamp)                            as paid_from,
-    coalesce(charges.paid_charges, 0)                                             as paid_charges,
-    coalesce(charges.gross_revenue_usd, 0)                                        as gross_revenue_usd,
-    coalesce(charges.refunded_usd, 0)                                             as refunded_usd,
+    sequenced.trial_end_at is not null as had_trial,
+    charges.first_paid_period_start is not null as has_paid,
+    cast(charges.first_paid_period_start as timestamp) as paid_from,
+    coalesce(charges.paid_charges, 0) as paid_charges,
+    coalesce(charges.gross_revenue_usd, 0) as gross_revenue_usd,
+    coalesce(charges.refunded_usd, 0) as refunded_usd,
     sequenced.subscription_number > 1
-        and coalesce(sequenced.previous_cancel_reason, '') <> 'plan_change'       as is_reactivation,
-    coalesce(sequenced.previous_cancel_reason, '') = 'plan_change'                as is_plan_change,
+    and coalesce(sequenced.previous_cancel_reason, '') <> 'plan_change' as is_reactivation,
+    coalesce(sequenced.previous_cancel_reason, '') = 'plan_change' as is_plan_change,
     case
-        when sequenced.ended_at <= {{ as_of_ts() }}           then 'ended'
-        when sequenced.canceled_at is not null                then 'non_renewing'
-        when sequenced.trial_end_at > {{ as_of_ts() }}        then 'trialing'
+        when sequenced.ended_at <= {{ as_of_ts() }} then 'ended'
+        when sequenced.canceled_at is not null then 'non_renewing'
+        when sequenced.trial_end_at > {{ as_of_ts() }} then 'trialing'
         else 'active'
-    end                                                                           as status_as_of
+    end as status_as_of
 from sequenced
 inner join plans
     on plans.plan_id = sequenced.plan_id

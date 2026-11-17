@@ -10,6 +10,6 @@ with spine as (
 )
 
 select
-    cast(date_month as date)                                           as month_start,
-    cast({{ dbt.dateadd('month', 1, 'date_month') }} as timestamp)     as snapshot_at
+    cast(date_month as date) as month_start,
+    cast({{ dbt.dateadd('month', 1, 'date_month') }} as timestamp) as snapshot_at
 from spine

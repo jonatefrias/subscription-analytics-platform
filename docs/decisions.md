@@ -104,3 +104,24 @@ they do not need their own policies.
 `tests/test_orchestration.py` copies the repo to a temp folder, points `PROJECT_ROOT` and the
 warehouse there, and runs the real `daily_refresh` job: generator, `dbt build`, every asset check.
 It proves the scheduled job works as a whole without touching local data, and it runs in CI.
+
+## 20. The linter owns style, so reviews do not
+sqlfluff renders every model through dbt before linting, so Jinja and macros are checked as
+the warehouse will see them; ruff covers the Python. Three rules are off because they fight
+common dbt conventions (column order in selects, table order in joins, `select *` in import
+CTEs). Inline `noqa` is used only where the rule is wrong for the code, with a comment saying why.
+
+## 21. Impact report instead of slim CI, until there is a production warehouse
+Slim CI (`dbt build --select state:modified+ --defer`) needs the unchanged parents to exist in a
+persistent warehouse; CI here uses a fresh DuckDB file, and a full build takes about a minute. So
+CI builds everything, and each pull request gets an impact report from the same state comparison:
+changed models, everything downstream, and the semantic-layer metrics on top of them. That is the
+part reviewers use; the `--defer` build switches on with the Snowflake target.
+
+## 22. AI review is a second pair of eyes, never a gate
+`scripts/ai_review.py` sends the diff and the impact report to Claude with
+`docs/review_guidelines.md` and posts findings with file, line and severity. It focuses on what
+tests cannot fully cover: grain, definitions, snapshot vs flow, currency. It runs only when the
+repository has an `ANTHROPIC_API_KEY` secret (otherwise CI costs nothing), it never blocks a
+merge (`continue-on-error`), and `--dry-run` prints the exact prompt so the same review can be
+run for free in an interactive assistant.
