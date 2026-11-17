@@ -8,7 +8,6 @@ test_daily_refresh_end_to_end
 """
 
 import importlib
-import os
 import shutil
 import sys
 from pathlib import Path
@@ -19,10 +18,11 @@ from dagster import AssetKey, DagsterInstance, Definitions
 REPO = Path(__file__).resolve().parents[1]
 
 
-def load_definitions(project_root: Path, duckdb_path: Path):
-    os.environ["PROJECT_ROOT"] = str(project_root)
-    os.environ["DUCKDB_PATH"] = str(duckdb_path)
-    os.environ["DBT_TARGET"] = "ci"
+def load_definitions(monkeypatch, project_root: Path, duckdb_path: Path):
+    # monkeypatch restores the environment after each test, so other tests are unaffected
+    monkeypatch.setenv("PROJECT_ROOT", str(project_root))
+    monkeypatch.setenv("DUCKDB_PATH", str(duckdb_path))
+    monkeypatch.setenv("DBT_TARGET", "ci")
     sys.modules.pop("orchestration.definitions", None)
     return importlib.import_module("orchestration.definitions").defs
 
@@ -37,8 +37,8 @@ def repo_copy(tmp_path: Path) -> Path:
     return tmp_path
 
 
-def test_definitions_load(repo_copy: Path, tmp_path: Path):
-    defs = load_definitions(repo_copy, tmp_path / "warehouse.duckdb")
+def test_definitions_load(monkeypatch, repo_copy: Path, tmp_path: Path):
+    defs = load_definitions(monkeypatch, repo_copy, tmp_path / "warehouse.duckdb")
     Definitions.validate_loadable(defs)
     graph = defs.resolve_asset_graph()
     keys = set(graph.get_all_asset_keys())
@@ -49,8 +49,8 @@ def test_definitions_load(repo_copy: Path, tmp_path: Path):
     assert any(k.name == "semantic_layer_reconciles" for k in graph.asset_check_keys)
 
 
-def test_daily_refresh_end_to_end(repo_copy: Path, tmp_path: Path):
-    defs = load_definitions(repo_copy, tmp_path / "warehouse.duckdb")
+def test_daily_refresh_end_to_end(monkeypatch, repo_copy: Path, tmp_path: Path):
+    defs = load_definitions(monkeypatch, repo_copy, tmp_path / "warehouse.duckdb")
     job = defs.resolve_job_def("daily_refresh")
     result = job.execute_in_process(
         run_config={"ops": {"raw_sources": {"config": {"scale": 0.2, "seed": 7}}}},

@@ -35,6 +35,7 @@ a separate profile.
 | Linting: sqlfluff rendered through dbt for SQL, ruff for Python | `transform/.sqlfluff`, `pyproject.toml` |
 | Pull-request impact report: changed models, downstream models and affected metrics (`state:modified+`) | `scripts/impact_report.py` |
 | AI review against written review guidelines, opt-in and free by default | `scripts/ai_review.py`, `docs/review_guidelines.md` |
+| MCP server for AI analysts: governed metrics only (no raw SQL), definitions, SQL shown, and a gate that re-derives every number | `semantic_agent/`, `.mcp.json` |
 | CI on every pull request: lint, build/test/reconcile, impact report + AI review | `.github/workflows/ci.yml` |
 
 ## Architecture
@@ -70,6 +71,8 @@ flowchart LR
         sl[semantic models<br/>metrics, saved queries]
     end
     Sources --> Staging --> Intermediate --> Marts --> Semantic
+    Semantic --> mcp(["MCP server: list, describe, query, verify"])
+    mcp --> ai(["AI analyst<br/>Claude Code / Desktop"])
     dag(["Dagster: daily_refresh 06:00 UTC<br/>assets, asset checks, freshness"]) -.orchestrates.-> Sources
     dag -.-> Marts
 ```
@@ -96,6 +99,15 @@ mf query --metrics mrr,logo_churn_rate --group-by metric_time__quarter
 mf query --metrics mrr,arpu --group-by customer__market_code --where "{{ TimeDimension('metric_time', 'month') }} = '2026-10-01'"
 mf query --metrics cac --group-by metric_time__month,acquisition_day__acquisition_channel
 ```
+
+### Ask the data through MCP
+
+`semantic_agent/` is an MCP server over the semantic layer. Open the repo in Claude Code (or add it
+to Claude Desktop) and `.mcp.json` registers it. The analyst gets four read-only tools:
+`list_metrics`, `describe_metric`, `query_metrics` (returns rows and the generated SQL) and
+`verify_number`, which re-derives a number through an independent path before it is reported.
+There is no raw-SQL tool: every answer comes from a definition the data team owns. See a real
+trace in [docs/agent_demo.md](docs/agent_demo.md).
 
 To run against Snowflake, export the `SNOWFLAKE_*` variables listed in `transform/profiles.yml`, load
 the Parquet files into a `RAW` schema, and run `DBT_TARGET=snowflake dbt build`.
@@ -139,6 +151,7 @@ The generator plants known behaviours; the marts recover them, which doubles as 
 | Research visits on a second device stay anonymous | first-touch channel agrees with the CRM for 79.7% of signups |
 | Paid-social retargeting between first visit and signup | last-non-direct gives paid social 7.6% more signups than first touch |
 | Logins link earlier anonymous visits | a third of the sessions tied to a customer are identified only through stitching |
+| The price increase hit only US, MX and ES | August 2025 logo churn 12–13% in those markets vs 8–10% elsewhere (found through the MCP tools) |
 
 ## Project structure
 
@@ -152,6 +165,7 @@ transform/            dbt project
   tests/              singular reconciliation tests
   seeds/              business calendar, GA4 source aliases, country reference
 orchestration/        Dagster definitions: assets, checks, job, schedule
+semantic_agent/       MCP server for AI analysts (metric catalog, governed queries, verification gate)
 tests/                orchestration tests (pytest)
 scripts/              semantic-layer reconciliation, PR impact report, AI review
 docs/decisions.md     design decisions and trade-offs
@@ -166,7 +180,7 @@ docs/review_guidelines.md  what every pull request is reviewed against
 - [x] Orchestration with Dagster (dbt assets, asset checks, freshness policies, daily schedule), tested end to end in CI
 - [x] Linting, PR impact report (`state:modified+` with affected metrics) and AI review in CI
 - [ ] Snowflake deployment and slim CI (`dbt build --select state:modified+ --defer`)
-- [ ] AI layer: an agent that answers questions through the semantic layer (MCP)
+- [x] AI layer: MCP server that answers questions through the semantic layer, with a verification gate
 - [ ] Experiment readout notebook: power analysis, CUPED, confidence intervals
 
 ## Author

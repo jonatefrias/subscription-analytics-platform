@@ -125,3 +125,22 @@ tests cannot fully cover: grain, definitions, snapshot vs flow, currency. It run
 repository has an `ANTHROPIC_API_KEY` secret (otherwise CI costs nothing), it never blocks a
 merge (`continue-on-error`), and `--dry-run` prints the exact prompt so the same review can be
 run for free in an interactive assistant.
+
+## 23. The AI analyst gets metrics, not SQL
+The MCP server exposes the semantic layer and nothing else: no tool runs arbitrary SQL. An agent
+with raw SQL will eventually sum a snapshot, join at the wrong grain or invent a churn definition,
+and the answer will look just as confident. With governed metrics the definitions are the data
+team's, the agent states them, and every query returns the SQL MetricFlow generated so a human can
+audit it. Questions the catalog cannot answer get "not defined" instead of an approximation.
+
+## 24. Every reported number passes a re-derivation gate
+`verify_number` recomputes a number through a second path before the agent reports it: MRR-bridge
+metrics against the hand-written `rpt_mrr_bridge` mart, other flows by summing a finer grain,
+other ratios from numerator and denominator queried separately. It also checks that the value
+the agent is about to write matches the data, which catches misread rows and summed snapshots.
+Metrics with no independent path come back as `unverifiable`, never as confirmed.
+
+## 25. MCP instead of a bespoke chat app
+MCP makes the same server usable from Claude Code, Claude Desktop or any MCP client, with the
+client's own model and subscription, so the project adds no API cost. The server shells out to
+the MetricFlow CLI (its stable interface) and is tested over the real stdio protocol in CI.
