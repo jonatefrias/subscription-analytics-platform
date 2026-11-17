@@ -59,7 +59,7 @@ jobs:
         working-directory: transform
         run: python ../scripts/check_semantic_layer.py
 
-      - name: Orchestration tests (Dagster code location + end-to-end daily_refresh job)
+      - name: Python tests (Dagster end-to-end job + MCP server over stdio)
         run: python -m pytest
 
   pr-review:
