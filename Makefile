@@ -3,7 +3,7 @@ PY      := .venv/bin/python
 DBT     := cd transform && DBT_PROFILES_DIR=. ../.venv/bin/dbt
 SCALE   ?= 1.0
 
-.PHONY: setup data deps build test metrics docs clean
+.PHONY: setup data deps build test metrics orchestrate test-orchestration docs clean
 
 setup:            ## create the virtualenv and install pinned dependencies
 	python3.11 -m venv .venv && .venv/bin/pip install -q -r requirements.txt
@@ -22,6 +22,12 @@ test:
 
 metrics:          ## validate the semantic layer and reconcile it with the marts
 	cd transform && DBT_PROFILES_DIR=. ../.venv/bin/mf validate-configs && DBT_PROFILES_DIR=. ../.venv/bin/python ../scripts/check_semantic_layer.py
+
+orchestrate:      ## open the Dagster UI with the full asset graph (http://localhost:3000)
+	.venv/bin/dagster dev -m orchestration.definitions
+
+test-orchestration: ## load the code location and run daily_refresh end to end on a temp copy
+	.venv/bin/python -m pytest
 
 docs:             ## generate and serve the dbt docs site
 	$(DBT) docs generate && $(DBT) docs serve

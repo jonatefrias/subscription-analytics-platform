@@ -6,3 +6,10 @@ pandas==3.1.1
 pyarrow==26.0.1
 dbt-metricflow==0.15.0
 metricflow==0.213.0
+dagster==1.13.30
+dagster-dbt==0.29.30
+dagster-webserver==1.13.30
+# dbt-core needs protobuf < 7; this grpcio-health-checking is the newest that accepts protobuf 6
+protobuf==6.33.6
+grpcio-health-checking==1.81.2
+pytest==9.2.0
