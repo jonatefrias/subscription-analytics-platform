@@ -23,8 +23,8 @@ jobs:
       - run: pip install -r requirements.txt
       - name: ruff (Python)
         run: |
-          ruff check generator scripts orchestration semantic_agent tests
-          ruff format --check generator scripts orchestration semantic_agent tests
+          ruff check generator scripts orchestration semantic_agent analysis notebooks tests
+          ruff format --check generator scripts orchestration semantic_agent analysis notebooks tests
       - name: sqlfluff (SQL, rendered through dbt)
         working-directory: transform
         run: |
@@ -59,8 +59,11 @@ jobs:
         working-directory: transform
         run: python ../scripts/check_semantic_layer.py
 
-      - name: Python tests (Dagster end-to-end job + MCP server over stdio)
+      - name: Python tests (Dagster end-to-end job, MCP server over stdio, experiment statistics)
         run: python -m pytest
+
+      - name: Execute the experiment readout notebook
+        run: jupyter nbconvert --to notebook --execute notebooks/paywall_experiment_readout.ipynb --output-dir /tmp/readout
 
   pr-review:
     name: Impact report and AI review
