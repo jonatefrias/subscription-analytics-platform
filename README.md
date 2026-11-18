@@ -147,7 +147,8 @@ the Parquet files into a `RAW` schema, and run `DBT_TARGET=snowflake dbt build`.
   semantic layer, never stored in a mart. MRR and customer counts are snapshot measures: at quarter or
   year grain the semantic layer takes the closing month instead of summing months.
 
-More detail on the trade-offs in [docs/decisions.md](docs/decisions.md).
+More detail on the trade-offs in [docs/decisions.md](docs/decisions.md). Every tool, how it is used and why it was
+chosen over the alternatives: [docs/tooling.md](docs/tooling.md).
 
 ## What the data shows (default seed)
 
@@ -184,6 +185,7 @@ semantic_agent/       MCP server for AI analysts (metric catalog, governed queri
 tests/                orchestration, MCP server and experiment statistics tests (pytest)
 scripts/              semantic-layer reconciliation, PR impact report, AI review
 docs/decisions.md     design decisions and trade-offs
+docs/tooling.md       every tool, how it is used and why it was chosen over the alternatives
 docs/review_guidelines.md  what every pull request is reviewed against
 ```
 
