@@ -144,3 +144,35 @@ Metrics with no independent path come back as `unverifiable`, never as confirmed
 MCP makes the same server usable from Claude Code, Claude Desktop or any MCP client, with the
 client's own model and subscription, so the project adds no API cost. The server shells out to
 the MetricFlow CLI (its stable interface) and is tested over the real stdio protocol in CI.
+
+## 26. The experiment is judged on 180-day revenue, not on the 30-day column
+The paywall test changes the mix of billing periods, and an annual plan collects twelve months on
+day one. At 30 days the variant leads by 53%; at 180 days by 19%, and the lead is still shrinking as
+monthly customers renew. The readout's primary metric is revenue per exposed signup at 180 days,
+the longest horizon every customer has; the mart keeps `revenue_first_30d_usd` as an early signal.
+Annual renewals at month 12 are outside the data, and the readout says so instead of projecting them.
+
+## 27. A decision rule before the numbers, with a non-inferiority guardrail
+The readout states primary metric, mechanism, guardrail and validity checks first, then computes.
+Paid conversion is a guardrail read from its confidence interval (can a 2-point drop be ruled
+out?), because the test has 23% power to detect that drop and "no significant harm" would mean
+nothing. Splitting the result by chosen plan is shown but not read causally: the plan is chosen
+after exposure, so those groups are not randomised.
+
+## 28. CUPED is reported even though it barely helps here
+Customers enter the test at signup and have no pre-period, so the covariate is a baseline built
+from the 60 days before the test (mean 180-day revenue of web signups in the same market). It
+removes 3% of the variance. That is the honest result for an acquisition test, and hiding it or
+picking a post-assignment covariate (early playback, the plan chosen) would bias the estimate.
+
+## 29. Statistics in a tested module, notebook executed in CI
+A notebook cannot be unit tested and silently rots when a mart changes. The intervals, power and
+CUPED functions live in `analysis/experiment.py` with known-answer and simulation tests (interval
+coverage, CUPED unbiasedness), and CI executes the notebook against the freshly built warehouse.
+The committed outputs are for the default dataset; narrative numbers refer to that run.
+
+## 30. Assignment is logged at signup, and the readout treats that as a limit
+`experiments_assignments` only has customers who signed up, so signup rate is not a randomised
+metric and a variant that scared visitors away would bias every comparison. The readout checks for
+it two ways (sample ratio, GA4 paywall-to-signup rate before vs during) and recommends logging
+exposure at paywall render for the next test, instead of changing the generator to hide the gap.
