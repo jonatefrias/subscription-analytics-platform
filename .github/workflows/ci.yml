@@ -23,8 +23,8 @@ jobs:
       - run: pip install -r requirements.txt
       - name: ruff (Python)
         run: |
-          ruff check generator scripts orchestration semantic_agent analysis notebooks tests
-          ruff format --check generator scripts orchestration semantic_agent analysis notebooks tests
+          ruff check generator scripts orchestration semantic_agent analysis reports notebooks tests
+          ruff format --check generator scripts orchestration semantic_agent analysis reports notebooks tests
       - name: sqlfluff (SQL, rendered through dbt)
         working-directory: transform
         run: |
@@ -64,6 +64,9 @@ jobs:
 
       - name: Execute the experiment readout notebook
         run: jupyter nbconvert --to notebook --execute notebooks/paywall_experiment_readout.ipynb --output-dir /tmp/readout
+
+      - name: Build the HTML reports
+        run: python reports/build.py --out /tmp/site
 
   pr-review:
     name: Impact report and AI review
