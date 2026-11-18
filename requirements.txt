@@ -18,3 +18,8 @@ sqlfluff-templater-dbt==4.5.0
 ruff==0.17.5
 anthropic==2.9.0
 mcp==2.3.0
+# experiment readout notebook
+scipy==1.17.1
+matplotlib==3.11.2
+nbconvert==7.17.2
+ipykernel==7.4.0

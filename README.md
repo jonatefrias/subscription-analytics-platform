@@ -36,6 +36,7 @@ a separate profile.
 | Pull-request impact report: changed models, downstream models and affected metrics (`state:modified+`) | `scripts/impact_report.py` |
 | AI review against written review guidelines, opt-in and free by default | `scripts/ai_review.py`, `docs/review_guidelines.md` |
 | MCP server for AI analysts: governed metrics only (no raw SQL), definitions, SQL shown, and a gate that re-derives every number | `semantic_agent/`, `.mcp.json` |
+| Experiment readout: decision rule, sample-ratio check, power, confidence intervals, CUPED, revenue horizon, web funnel | `notebooks/paywall_experiment_readout.ipynb`, `analysis/experiment.py` |
 | CI on every pull request: lint, build/test/reconcile, impact report + AI review | `.github/workflows/ci.yml` |
 
 ## Architecture
@@ -88,6 +89,7 @@ make orchestrate    # Dagster UI with the asset graph at http://localhost:3000
 make test-orchestration  # run the daily_refresh job end to end on a temp copy
 make lint           # sqlfluff + ruff
 make review         # print the AI review prompt for the current branch (no API call)
+make readout        # re-run the experiment readout notebook against the local warehouse
 make docs           # dbt docs site with lineage
 ```
 
@@ -108,6 +110,17 @@ to Claude Desktop) and `.mcp.json` registers it. The analyst gets four read-only
 `verify_number`, which re-derives a number through an independent path before it is reported.
 There is no raw-SQL tool: every answer comes from a definition the data team owns. See a real
 trace in [docs/agent_demo.md](docs/agent_demo.md).
+
+### Experiment readout
+
+[notebooks/paywall_experiment_readout.ipynb](notebooks/paywall_experiment_readout.ipynb) reads the
+paywall A/B test (annual plan highlighted vs not) the way a product team would decide on it. With the
+default dataset: the annual share goes from 14.7% to 25.9%, and revenue per signup over 180 days rises
+by $6.01 (95% CI $3.69 to $8.34, +18.6%) with paid conversion unharmed, so the variant ships. Two
+findings worth the read: the 30-day revenue lift (+53%) is three times the 180-day one because annual
+plans prepay twelve months, and CUPED removes only 3% of the variance because new signups have no
+pre-period. The statistics are plain functions in `analysis/experiment.py` with unit tests, and CI
+executes the notebook on every pull request.
 
 To run against Snowflake, export the `SNOWFLAKE_*` variables listed in `transform/profiles.yml`, load
 the Parquet files into a `RAW` schema, and run `DBT_TARGET=snowflake dbt build`.
@@ -145,7 +158,7 @@ The generator plants known behaviours; the marts recover them, which doubles as 
 | Paid-social trials convert worse | trial conversion 47.7% vs 57–58% for search/organic and 66.8% for referral |
 | Monthly price increase in US/MX/ES on 2025-07-01 | +$7.8k expansion MRR in July 2025, then logo churn rises to 9.6% and 11.5% |
 | Big-match-day signups churn faster | 27.3% early voluntary churn vs 22.6% |
-| Paywall test highlighting the annual plan | annual share 25.9% vs 14.7%; 30-day revenue per user $24.8 vs $16.2 |
+| Paywall test highlighting the annual plan | annual share 25.9% vs 14.7%; 180-day revenue per signup $38.4 vs $32.4 (30-day: $24.8 vs $16.2) |
 | Paying retention | 89% at month 1, 65% at month 6, 44% at month 12 |
 | 12% of web visitors decline analytics consent | GA4 records 87.9% of the web signups in the CRM |
 | Research visits on a second device stay anonymous | first-touch channel agrees with the CRM for 79.7% of signups |
@@ -165,8 +178,10 @@ transform/            dbt project
   tests/              singular reconciliation tests
   seeds/              business calendar, GA4 source aliases, country reference
 orchestration/        Dagster definitions: assets, checks, job, schedule
+analysis/             experiment statistics (intervals, power, CUPED), unit tested
+notebooks/            experiment readout for the paywall A/B test
 semantic_agent/       MCP server for AI analysts (metric catalog, governed queries, verification gate)
-tests/                orchestration tests (pytest)
+tests/                orchestration, MCP server and experiment statistics tests (pytest)
 scripts/              semantic-layer reconciliation, PR impact report, AI review
 docs/decisions.md     design decisions and trade-offs
 docs/review_guidelines.md  what every pull request is reviewed against
@@ -181,7 +196,7 @@ docs/review_guidelines.md  what every pull request is reviewed against
 - [x] Linting, PR impact report (`state:modified+` with affected metrics) and AI review in CI
 - [ ] Snowflake deployment and slim CI (`dbt build --select state:modified+ --defer`)
 - [x] AI layer: MCP server that answers questions through the semantic layer, with a verification gate
-- [ ] Experiment readout notebook: power analysis, CUPED, confidence intervals
+- [x] Experiment readout notebook: power analysis, CUPED, confidence intervals, web funnel
 
 ## Author
 
