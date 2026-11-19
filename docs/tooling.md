@@ -26,6 +26,7 @@ Versions are pinned in [`requirements.txt`](../requirements.txt).
 | Delivery | Git, GitHub Actions, gh, Make | Branches, CI, local workflow |
 | AI | Anthropic API, MCP | Pull-request review, governed analyst access |
 | Analysis | Jupyter (nbconvert), SciPy, Matplotlib | Experiment readout |
+| Reporting | Python-generated HTML and SVG, GitHub Pages | Published analysis reports |
 
 ---
 
@@ -344,11 +345,42 @@ SQL.
 
 ---
 
+## Reporting
+
+### Generated HTML with inline SVG, published with GitHub Pages
+
+**What for.** Five static pages with the main results (overview, revenue, retention, acquisition,
+experiment), readable without cloning the repository:
+<https://jonatefrias.github.io/subscription-analytics-platform/>.
+
+**How.**
+- `reports/build.py` queries the warehouse and writes the pages. MRR, churn, ARPU, CAC and the
+  conversion rates go through MetricFlow, using the same wrapper as the MCP server; cohorts,
+  attribution and the experiment read the marts. Headlines and prose interpolate the numbers.
+- `reports/charts.py` draws the charts as inline SVG (lines, stacked and grouped bars, heatmap,
+  intervals) with CSS variables for light and dark mode and a small script for hover tooltips.
+- CI builds the pages on every pull request. `.github/workflows/pages.yml` rebuilds them on the
+  default dataset and deploys them on every merge to `main`. The output (`site/`) is not committed.
+
+**Why this and not something else.**
+- *Hand-written HTML pages* would drift from the models at the first change; generated pages cannot.
+- *A BI tool or a Streamlit/Evidence app* needs a server or a hosted account to be seen. Static
+  files on GitHub Pages cost nothing and have nothing to keep running.
+- *Plotly, Vega or another charting library* would give more chart types and richer interaction,
+  at the price of a JavaScript dependency loaded from a CDN or bundled into every page. A few
+  hundred lines of SVG cover the five chart types the reports need.
+- *Publishing the notebook as HTML* (nbconvert, Quarto) shows the method; these pages are the
+  short version for a reader who wants the result.
+- *dbt docs* answers a different question (lineage and column documentation) and is still a good
+  candidate to publish next to the reports.
+
+---
+
 ## Deliberately not here
 
 | Missing | Why |
 |---|---|
-| A BI tool (Looker, Power BI, Tableau, Metabase) | The project stops at governed metrics. A dashboard would need hosting or a licence to be seen, and the semantic layer is what a BI tool would sit on. |
+| A BI tool (Looker, Power BI, Tableau, Metabase) | A dashboard would need hosting or a licence to be seen. The static reports cover the reading; the semantic layer is what a BI tool would sit on. |
 | An ingestion tool (Fivetran, Airbyte, dlt) | There is no external system to extract from; the generator plays that role and the staging layer handles the source quirks an extractor would deliver. |
 | Docker | One `pip install` into a virtualenv reproduces the environment; a container would add a prerequisite without removing one. |
 | Streaming (Kafka, Flink) | The business questions are daily and monthly. Late and duplicated events are handled in batch with a lookback window. |
