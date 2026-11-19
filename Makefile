@@ -2,9 +2,9 @@
 PY      := .venv/bin/python
 DBT     := cd transform && DBT_PROFILES_DIR=. ../.venv/bin/dbt
 SCALE   ?= 1.0
-PY_SRC  := generator scripts orchestration semantic_agent analysis notebooks tests
+PY_SRC  := generator scripts orchestration semantic_agent analysis reports notebooks tests
 
-.PHONY: setup data deps build test metrics orchestrate test-orchestration lint review readout docs clean
+.PHONY: setup data deps build test metrics orchestrate test-orchestration lint review readout reports docs clean
 
 setup:            ## create the virtualenv and install pinned dependencies
 	python3.11 -m venv .venv && .venv/bin/pip install -q -r requirements.txt
@@ -40,8 +40,11 @@ review:           ## print the AI review prompt for this branch (no API call); d
 readout:          ## re-run the experiment readout notebook against the local warehouse, keeping its outputs
 	.venv/bin/jupyter nbconvert --to notebook --execute --inplace notebooks/paywall_experiment_readout.ipynb
 
+reports:          ## build the static HTML reports into site/ (open site/index.html)
+	$(PY) reports/build.py --out site
+
 docs:             ## generate and serve the dbt docs site
 	$(DBT) docs generate && $(DBT) docs serve
 
 clean:
-	rm -rf data transform/target transform/dbt_packages
+	rm -rf data site transform/target transform/dbt_packages

@@ -176,3 +176,14 @@ The committed outputs are for the default dataset; narrative numbers refer to th
 metric and a variant that scared visitors away would bias every comparison. The readout checks for
 it two ways (sample ratio, GA4 paywall-to-signup rate before vs during) and recommends logging
 exposure at paywall render for the next test, instead of changing the generator to hide the gap.
+
+## 31. Reports are generated, not written
+The HTML reports are the output of `reports/build.py`: every figure, including the ones in the
+headlines, comes from a query, and the site is rebuilt on every merge. A hand-edited page would
+drift from the models at the first change to the generator. Business metrics go through
+MetricFlow, the same path the MCP server uses, so a report cannot carry its own definition of
+churn. That constraint showed up at once: logo churn by acquisition channel over the whole period
+returns no value, because opening customers is a snapshot and has no meaning without a month. The
+report asks for the months and combines them as a ratio of sums. Charts are inline SVG written by a
+small helper instead of a JavaScript library, which keeps the pages self-contained and the build
+free of a front-end toolchain; the trade-off is fewer chart types and simple hover tooltips only.

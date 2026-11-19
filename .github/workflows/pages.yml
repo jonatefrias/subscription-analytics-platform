@@ -1,0 +1,60 @@
+name: Reports site
+
+# Rebuilds the static analysis reports from scratch and publishes them with GitHub Pages.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+env:
+  DBT_TARGET: ci
+  DBT_PROFILES_DIR: .
+  DUCKDB_PATH: /tmp/site_warehouse.duckdb
+
+jobs:
+  build:
+    name: Build the reports
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r requirements.txt
+
+      - name: Generate the default dataset (the one the README numbers refer to)
+        run: python generator/generate.py --out data/raw
+
+      - name: dbt build
+        working-directory: transform
+        run: |
+          dbt deps
+          dbt build --fail-fast
+
+      - name: Build the HTML reports
+        run: python reports/build.py --out site
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+
+  deploy:
+    name: Publish to GitHub Pages
+    needs: build
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5
