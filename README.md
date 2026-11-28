@@ -41,6 +41,7 @@ a separate profile.
 | MCP server for AI analysts: governed metrics only (no raw SQL), definitions, SQL shown, and a gate that re-derives every number | `semantic_agent/`, `.mcp.json` |
 | Experiment readout: decision rule, sample-ratio check, power, confidence intervals, CUPED, revenue horizon, web funnel | `notebooks/paywall_experiment_readout.ipynb`, `analysis/experiment.py` |
 | Static analysis reports generated from the semantic layer and the marts, published with GitHub Pages | `reports/`, `.github/workflows/pages.yml` |
+| Self-service BI with Lightdash: explores and metrics from the dbt YAML, MetricFlow metrics translated on deploy, dashboards as code, reconciled with the marts | `lightdash/`, `scripts/check_lightdash.py` |
 | CI on every pull request: lint, build/test/reconcile, impact report + AI review | `.github/workflows/ci.yml` |
 
 ## Architecture
@@ -95,6 +96,7 @@ make lint           # sqlfluff + ruff
 make review         # print the AI review prompt for the current branch (no API call)
 make readout        # re-run the experiment readout notebook against the local warehouse
 make reports        # build the static HTML reports into site/
+make lightdash      # optional: local Lightdash on the marts with dashboards (needs Docker and Node)
 make docs           # dbt docs site with lineage
 ```
 
@@ -126,6 +128,29 @@ findings worth the read: the 30-day revenue lift (+53%) is three times the 180-d
 plans prepay twelve months, and CUPED removes only 3% of the variance because new signups have no
 pre-period. The statistics are plain functions in `analysis/experiment.py` with unit tests, and CI
 executes the notebook on every pull request.
+
+### Explore with Lightdash
+
+`make lightdash` starts a self-hosted [Lightdash](https://www.lightdash.com/) in Docker, publishes the
+marts to a local DuckLake, deploys the dbt project and uploads two dashboards kept as code. It is the
+only part of the project that needs Docker (and Node for the Lightdash CLI); everything else runs without it.
+
+![Revenue and retention dashboard in Lightdash](docs/img/lightdash-revenue.jpg)
+
+- **One definition per metric.** The 30 MetricFlow metrics are translated into Lightdash metrics on
+  deploy, ratios and derived metrics included, so nothing is defined twice. Lightdash-native metrics
+  exist only where MetricFlow has none (cohort retention, the experiment).
+- **Explores are an explicit list.** Seven marts carry the `lightdash` tag; staging and intermediate
+  models are not exposed.
+- **Charts and dashboards as code** in `lightdash/content/`, downloaded with the CLI and linted in CI.
+- **Reconciled.** `make lightdash-check` queries the Lightdash API and compares 34 months of 11 metrics
+  with `rpt_mrr_bridge`. Its first run found that months without a movement came back null and took
+  the gross churn rate with them, which led to a better metric definition (decision 33).
+- **A known limit, guarded.** Lightdash has no semi-additive metrics, so MRR is offered at month grain
+  only: at quarter grain it would sum three month-end snapshots.
+
+Second dashboard: [acquisition and experiment](docs/img/lightdash-acquisition.jpg). Stop the containers with
+`make lightdash-down`; `make lightdash-reset` also deletes the instance's database.
 
 ### Analysis reports
 
@@ -197,6 +222,7 @@ orchestration/        Dagster definitions: assets, checks, job, schedule
 analysis/             experiment statistics (intervals, power, CUPED), unit tested
 notebooks/            experiment readout for the paywall A/B test
 reports/              generator of the static HTML reports (inline SVG charts, no JS dependencies)
+lightdash/            local Lightdash: Docker Compose, first-run setup, charts and dashboards as code
 semantic_agent/       MCP server for AI analysts (metric catalog, governed queries, verification gate)
 tests/                orchestration, MCP server and experiment statistics tests (pytest)
 scripts/              semantic-layer reconciliation, PR impact report, AI review

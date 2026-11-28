@@ -1,0 +1,122 @@
+chartConfig:
+  config:
+    eChartsConfig:
+      series:
+        - encode:
+            xRef:
+              field: fct_mrr_monthly_month_start_month
+            yRef:
+              field: fct_mrr_monthly_new_mrr
+          stack: movements
+          type: bar
+          yAxisIndex: 0
+        - encode:
+            xRef:
+              field: fct_mrr_monthly_month_start_month
+            yRef:
+              field: fct_mrr_monthly_reactivation_mrr
+          stack: movements
+          type: bar
+          yAxisIndex: 0
+        - encode:
+            xRef:
+              field: fct_mrr_monthly_month_start_month
+            yRef:
+              field: fct_mrr_monthly_expansion_mrr
+          stack: movements
+          type: bar
+          yAxisIndex: 0
+        - encode:
+            xRef:
+              field: fct_mrr_monthly_month_start_month
+            yRef:
+              field: fct_mrr_monthly_contraction_mrr
+          stack: movements
+          type: bar
+          yAxisIndex: 0
+        - encode:
+            xRef:
+              field: fct_mrr_monthly_month_start_month
+            yRef:
+              field: fct_mrr_monthly_churned_mrr
+          stack: movements
+          type: bar
+          yAxisIndex: 0
+      yAxis:
+        - name: MRR change (USD)
+    layout:
+      showIncompletePeriod: true
+      xField: fct_mrr_monthly_month_start_month
+      yField:
+        - fct_mrr_monthly_new_mrr
+        - fct_mrr_monthly_reactivation_mrr
+        - fct_mrr_monthly_expansion_mrr
+        - fct_mrr_monthly_contraction_mrr
+        - fct_mrr_monthly_churned_mrr
+  type: cartesian
+contentType: chart
+description: New, reactivation and expansion add MRR; contraction and churn remove it.
+metricQuery:
+  additionalMetrics: []
+  customDimensions: []
+  dimensions:
+    - fct_mrr_monthly_month_start_month
+  exploreName: fct_mrr_monthly
+  filters: {}
+  limit: 500
+  metricOverrides:
+    fct_mrr_monthly_churned_mrr:
+      formatOptions:
+        currency: USD
+        round: 0
+        separator: default
+        type: currency
+    fct_mrr_monthly_contraction_mrr:
+      formatOptions:
+        currency: USD
+        round: 0
+        separator: default
+        type: currency
+    fct_mrr_monthly_expansion_mrr:
+      formatOptions:
+        currency: USD
+        round: 0
+        separator: default
+        type: currency
+    fct_mrr_monthly_new_mrr:
+      formatOptions:
+        currency: USD
+        round: 0
+        separator: default
+        type: currency
+    fct_mrr_monthly_reactivation_mrr:
+      formatOptions:
+        currency: USD
+        round: 0
+        separator: default
+        type: currency
+  metrics:
+    - fct_mrr_monthly_new_mrr
+    - fct_mrr_monthly_reactivation_mrr
+    - fct_mrr_monthly_expansion_mrr
+    - fct_mrr_monthly_contraction_mrr
+    - fct_mrr_monthly_churned_mrr
+  sorts:
+    - descending: false
+      fieldId: fct_mrr_monthly_month_start_month
+  tableCalculations: []
+  timezone: project_timezone
+name: MRR movements by month
+slug: mrr-movements
+spaceSlug: matchday-analytics
+tableConfig:
+  columnOrder:
+    - fct_mrr_monthly_month_start_month
+    - fct_mrr_monthly_new_mrr
+    - fct_mrr_monthly_reactivation_mrr
+    - fct_mrr_monthly_expansion_mrr
+    - fct_mrr_monthly_contraction_mrr
+    - fct_mrr_monthly_churned_mrr
+tableName: fct_mrr_monthly
+verification: null
+version: 1

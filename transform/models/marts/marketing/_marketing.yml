@@ -3,10 +3,22 @@ version: 2
 models:
   - name: fct_acquisition_daily
     description: Day x market x channel signups, trial funnel and paid media spend (CRM view).
+    config:
+      tags: [lightdash]
     data_tests:
       - dbt_utils.unique_combination_of_columns:
           arguments:
             combination_of_columns: [activity_date, market_code, acquisition_channel]
+    columns:
+      - {name: activity_date, description: Signup day (UTC).}
+      - {name: market_code, description: Market of the customer.}
+      - {name: acquisition_channel, description: Channel recorded by the CRM at signup.}
+      - {name: signups, description: Customers created that day.}
+      - {name: trials_started, description: Signups that started on a trial.}
+      - {name: trials_converted, description: Trials with a successful charge inside the conversion window.}
+      # paying_customers_acquired is left out on purpose: Lightdash would turn the column into a
+      # dimension and drop the MetricFlow metric of the same name, which CAC is built on
+      - {name: spend_usd, description: Paid media spend (USD).}
 
   - name: fct_web_sessions
     description: >
@@ -24,10 +36,23 @@ models:
 
   - name: fct_web_funnel_daily
     description: Day x market x session channel funnel counts from GA4.
+    config:
+      tags: [lightdash]
     data_tests:
       - dbt_utils.unique_combination_of_columns:
           arguments:
             combination_of_columns: [activity_date, market_code, channel]
+    columns:
+      - {name: activity_date, description: Session day (UTC).}
+      - {name: market_code, description: Market of the visitor.}
+      - {name: channel, description: Channel of the session.}
+      - {name: sessions, description: GA4 sessions.}
+      - {name: engaged_sessions, description: Sessions GA4 counts as engaged.}
+      - {name: paywall_sessions, description: Sessions that reached the paywall.}
+      - {name: plan_selected_sessions, description: Sessions where a plan was selected.}
+      - {name: signup_sessions, description: Sessions that ended in a signup.}
+      - {name: trial_sessions, description: Sessions that started a trial.}
+      - {name: purchase_sessions, description: Sessions that paid at signup.}
 
   - name: fct_signup_attribution
     description: >

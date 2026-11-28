@@ -10,6 +10,20 @@ subscription_analytics:
       type: duckdb
       path: "{{ env_var('DUCKDB_PATH', '/tmp/ci_warehouse.duckdb') }}"
       threads: 4
+    # Local DuckLake (DuckDB catalog file + Parquet data) that the Lightdash container reads.
+    # LAKE_DIR must be an absolute path: the same path is mounted inside the container.
+    lightdash:
+      type: duckdb
+      path: ":memory:"
+      database: ducklake
+      schema: main
+      threads: 1
+      extensions: [ducklake]
+      attach:
+        - alias: ducklake
+          path: "ducklake:{{ env_var('LAKE_DIR', '../data/lake') }}/catalog.duckdb"
+          options:
+            data_path: "{{ env_var('LAKE_DIR', '../data/lake') }}/data"
     snowflake:
       type: snowflake
       account: "{{ env_var('SNOWFLAKE_ACCOUNT', '') }}"

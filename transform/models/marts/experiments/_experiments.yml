@@ -3,9 +3,53 @@ version: 2
 models:
   - name: fct_experiment_exposures
     description: Customers exposed to experiments with their conversion and revenue outcomes.
+    config:
+      tags: [lightdash]
+      meta:
+        joins:
+          - join: dim_customers
+            sql_on: ${fct_experiment_exposures.customer_id} = ${dim_customers.customer_id}
+            relationship: one-to-one
+            fields: [market_code, acquisition_channel]
     columns:
       - name: customer_id
         data_tests: [unique, not_null]
+        config:
+          meta:
+            metrics:
+              exposed_customers: {type: count_distinct, label: Exposed customers}
+      - {name: experiment_id, description: Experiment the customer was exposed to.}
+      - {name: assigned_at, description: When the variant was assigned (at signup).}
+      - name: chose_annual
+        description: The first subscription is an annual plan.
+        config:
+          meta:
+            metrics:
+              annual_plan_share:
+                type: average
+                label: Annual plan share
+                sql: case when ${TABLE}.chose_annual then 1.0 else 0.0 end
+                format: "0.0%"
+      - name: paid_within_window
+        description: First successful charge inside the trial conversion window.
+        config:
+          meta:
+            metrics:
+              paid_conversion_rate:
+                type: average
+                label: Paid within 14 days
+                sql: case when ${TABLE}.paid_within_window then 1.0 else 0.0 end
+                format: "0.0%"
+      - name: revenue_first_30d_usd
+        description: Paid revenue in the 30 days after assignment (USD, constant FX).
+        config:
+          meta:
+            metrics:
+              revenue_30d_per_signup:
+                type: average
+                label: Revenue per signup, 30 days
+                description: Early signal only; the readout judges the test on 180-day revenue.
+                format: "$#,##0.00"
       - name: variant
         data_tests:
           - accepted_values:

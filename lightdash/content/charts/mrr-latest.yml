@@ -1,0 +1,39 @@
+chartConfig:
+  config:
+    label: MRR, latest month
+    selectedField: fct_mrr_monthly_mrr
+  type: big_number
+contentType: chart
+description: Closing MRR of the latest month (USD, constant FX).
+metricQuery:
+  additionalMetrics: []
+  customDimensions: []
+  dimensions:
+    - fct_mrr_monthly_month_start_month
+  exploreName: fct_mrr_monthly
+  filters: {}
+  limit: 1
+  metricOverrides:
+    fct_mrr_monthly_mrr:
+      formatOptions:
+        currency: USD
+        round: 0
+        separator: default
+        type: currency
+  metrics:
+    - fct_mrr_monthly_mrr
+  sorts:
+    - descending: true
+      fieldId: fct_mrr_monthly_month_start_month
+  tableCalculations: []
+  timezone: project_timezone
+name: MRR
+slug: mrr-latest
+spaceSlug: matchday-analytics
+tableConfig:
+  columnOrder:
+    - fct_mrr_monthly_month_start_month
+    - fct_mrr_monthly_mrr
+tableName: fct_mrr_monthly
+verification: null
+version: 1

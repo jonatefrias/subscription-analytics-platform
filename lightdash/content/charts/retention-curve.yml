@@ -1,0 +1,56 @@
+chartConfig:
+  config:
+    eChartsConfig:
+      series:
+        - encode:
+            xRef:
+              field: fct_cohort_retention_months_since_first_paid
+            yRef:
+              field: fct_cohort_retention_cohort_retention_rate
+          type: line
+          yAxisIndex: 0
+    layout:
+      showIncompletePeriod: true
+      xField: fct_cohort_retention_months_since_first_paid
+      yField:
+        - fct_cohort_retention_cohort_retention_rate
+  type: cartesian
+contentType: chart
+description: >-
+  Share of customers still paying by months since first payment, all cohorts
+  (ratio of sums).
+metricQuery:
+  additionalMetrics: []
+  customDimensions: []
+  dimensions:
+    - fct_cohort_retention_months_since_first_paid
+  exploreName: fct_cohort_retention
+  filters:
+    dimensions:
+      and:
+        - id: retention-12m
+          operator: lessThanOrEqual
+          target:
+            fieldId: fct_cohort_retention_months_since_first_paid
+          values:
+            - 12
+      id: retention-root
+  limit: 500
+  metricOverrides: {}
+  metrics:
+    - fct_cohort_retention_cohort_retention_rate
+  sorts:
+    - descending: false
+      fieldId: fct_cohort_retention_months_since_first_paid
+  tableCalculations: []
+  timezone: project_timezone
+name: Paying retention curve
+slug: retention-curve
+spaceSlug: matchday-analytics
+tableConfig:
+  columnOrder:
+    - fct_cohort_retention_months_since_first_paid
+    - fct_cohort_retention_cohort_retention_rate
+tableName: fct_cohort_retention
+verification: null
+version: 1

@@ -1,0 +1,39 @@
+chartConfig:
+  config: {}
+  type: table
+contentType: chart
+description: >-
+  Point estimates only. Intervals, power and the 180-day revenue readout are in
+  the notebook.
+metricQuery:
+  additionalMetrics: []
+  customDimensions: []
+  dimensions:
+    - fct_experiment_exposures_variant
+  exploreName: fct_experiment_exposures
+  filters: {}
+  limit: 500
+  metricOverrides: {}
+  metrics:
+    - fct_experiment_exposures_exposed_customers
+    - fct_experiment_exposures_annual_plan_share
+    - fct_experiment_exposures_paid_conversion_rate
+    - fct_experiment_exposures_revenue_30d_per_signup
+  sorts:
+    - descending: true
+      fieldId: fct_experiment_exposures_variant
+  tableCalculations: []
+  timezone: project_timezone
+name: Paywall experiment by variant
+slug: paywall-experiment-by-variant
+spaceSlug: matchday-analytics
+tableConfig:
+  columnOrder:
+    - fct_experiment_exposures_variant
+    - fct_experiment_exposures_exposed_customers
+    - fct_experiment_exposures_annual_plan_share
+    - fct_experiment_exposures_paid_conversion_rate
+    - fct_experiment_exposures_revenue_30d_per_signup
+tableName: fct_experiment_exposures
+verification: null
+version: 1

@@ -1,0 +1,52 @@
+chartConfig:
+  config: {}
+  type: table
+contentType: chart
+description: >-
+  GA4 sessions, share reaching the paywall and share ending in a signup, by
+  session channel.
+metricQuery:
+  additionalMetrics: []
+  customDimensions: []
+  dimensions:
+    - fct_web_funnel_daily_channel
+  exploreName: fct_web_funnel_daily
+  filters: {}
+  limit: 500
+  metricOverrides:
+    fct_web_funnel_daily_paywall_view_rate:
+      formatOptions:
+        round: 1
+        separator: default
+        type: percent
+    fct_web_funnel_daily_web_sessions:
+      formatOptions:
+        round: 0
+        separator: default
+        type: number
+    fct_web_funnel_daily_web_signup_rate:
+      formatOptions:
+        round: 1
+        separator: default
+        type: percent
+  metrics:
+    - fct_web_funnel_daily_web_sessions
+    - fct_web_funnel_daily_paywall_view_rate
+    - fct_web_funnel_daily_web_signup_rate
+  sorts:
+    - descending: true
+      fieldId: fct_web_funnel_daily_web_sessions
+  tableCalculations: []
+  timezone: project_timezone
+name: Web funnel by channel
+slug: web-funnel-by-channel
+spaceSlug: matchday-analytics
+tableConfig:
+  columnOrder:
+    - fct_web_funnel_daily_channel
+    - fct_web_funnel_daily_web_sessions
+    - fct_web_funnel_daily_paywall_view_rate
+    - fct_web_funnel_daily_web_signup_rate
+tableName: fct_web_funnel_daily
+verification: null
+version: 1

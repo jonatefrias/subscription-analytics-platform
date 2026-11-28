@@ -1,0 +1,127 @@
+chartConfig:
+  config:
+    eChartsConfig:
+      series:
+        - encode:
+            xRef:
+              field: fct_mrr_monthly_month_start_month
+            yRef:
+              field: fct_mrr_monthly_mrr
+              pivotValues:
+                - field: dim_customers_market_code
+                  value: US
+          stack: fct_mrr_monthly_mrr
+          type: bar
+          yAxisIndex: 0
+        - encode:
+            xRef:
+              field: fct_mrr_monthly_month_start_month
+            yRef:
+              field: fct_mrr_monthly_mrr
+              pivotValues:
+                - field: dim_customers_market_code
+                  value: MX
+          stack: fct_mrr_monthly_mrr
+          type: bar
+          yAxisIndex: 0
+        - encode:
+            xRef:
+              field: fct_mrr_monthly_month_start_month
+            yRef:
+              field: fct_mrr_monthly_mrr
+              pivotValues:
+                - field: dim_customers_market_code
+                  value: ES
+          stack: fct_mrr_monthly_mrr
+          type: bar
+          yAxisIndex: 0
+        - encode:
+            xRef:
+              field: fct_mrr_monthly_month_start_month
+            yRef:
+              field: fct_mrr_monthly_mrr
+              pivotValues:
+                - field: dim_customers_market_code
+                  value: AR
+          stack: fct_mrr_monthly_mrr
+          type: bar
+          yAxisIndex: 0
+        - encode:
+            xRef:
+              field: fct_mrr_monthly_month_start_month
+            yRef:
+              field: fct_mrr_monthly_mrr
+              pivotValues:
+                - field: dim_customers_market_code
+                  value: CL
+          stack: fct_mrr_monthly_mrr
+          type: bar
+          yAxisIndex: 0
+        - encode:
+            xRef:
+              field: fct_mrr_monthly_month_start_month
+            yRef:
+              field: fct_mrr_monthly_mrr
+              pivotValues:
+                - field: dim_customers_market_code
+                  value: CO
+          stack: fct_mrr_monthly_mrr
+          type: bar
+          yAxisIndex: 0
+        - encode:
+            xRef:
+              field: fct_mrr_monthly_month_start_month
+            yRef:
+              field: fct_mrr_monthly_mrr
+              pivotValues:
+                - field: dim_customers_market_code
+                  value: PE
+          stack: fct_mrr_monthly_mrr
+          type: bar
+          yAxisIndex: 0
+      yAxis:
+        - name: MRR (USD)
+    layout:
+      xField: fct_mrr_monthly_month_start_month
+      yField:
+        - fct_mrr_monthly_mrr
+  type: cartesian
+contentType: chart
+description: Month-end MRR split by the market of the customer.
+metricQuery:
+  additionalMetrics: []
+  customDimensions: []
+  dimensions:
+    - fct_mrr_monthly_month_start_month
+    - dim_customers_market_code
+  exploreName: fct_mrr_monthly
+  filters: {}
+  limit: 5000
+  metricOverrides:
+    fct_mrr_monthly_mrr:
+      formatOptions:
+        currency: USD
+        round: 0
+        separator: default
+        type: currency
+  metrics:
+    - fct_mrr_monthly_mrr
+  sorts:
+    - descending: false
+      fieldId: fct_mrr_monthly_month_start_month
+  tableCalculations: []
+  timezone: project_timezone
+name: MRR by market
+pivotConfig:
+  columns:
+    - dim_customers_market_code
+slug: mrr-by-market
+spaceSlug: matchday-analytics
+tableConfig:
+  columnOrder:
+    - fct_mrr_monthly_month_start_month
+    - dim_customers_market_code
+    - fct_mrr_monthly_mrr
+tableName: fct_mrr_monthly
+verification: null
+version: 1

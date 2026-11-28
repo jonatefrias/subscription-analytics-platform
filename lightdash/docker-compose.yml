@@ -1,0 +1,65 @@
+# Local Lightdash instance for exploring the marts. Not a production setup: default passwords,
+# no HTTPS, everything on one machine. Start it with `make lightdash` from the repository root.
+name: matchday-lightdash
+
+services:
+  lightdash:
+    image: lightdash/lightdash:3.434.0
+    platform: linux/amd64 # the image is published for amd64 only; Apple Silicon runs it emulated
+    depends_on: [db, minio]
+    environment:
+      PGHOST: db
+      PGPORT: "5432"
+      PGUSER: postgres
+      PGPASSWORD: ${PGPASSWORD:-lightdash_local}
+      PGDATABASE: postgres
+      LIGHTDASH_SECRET: ${LIGHTDASH_SECRET:-local-demo-secret-change-me}
+      SITE_URL: http://localhost:${LIGHTDASH_PORT:-8080}
+      PORT: "8080"
+      SECURE_COOKIES: "false"
+      TRUST_PROXY: "false"
+      LIGHTDASH_INSTALL_TYPE: docker_image
+      LIGHTDASH_MIGRATION_EXECUTION_MODE: compose
+      SCHEDULER_ENABLED: "true"
+      HEADWAY_ENABLED: "false"
+      RUDDERSTACK_ANALYTICS_DISABLED: "true" # no product telemetry leaves the machine
+      S3_ENDPOINT: http://minio:9000
+      S3_REGION: us-east-1
+      S3_BUCKET: default
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: ${MINIO_PASSWORD:-minioadmin}
+      S3_FORCE_PATH_STYLE: "true"
+    volumes:
+      # The DuckLake (catalog file + Parquet data) is mounted at the same absolute path it has on
+      # the host, so the dbt profile the CLI deploys with is valid inside the container too.
+      - ${LAKE_DIR:?run through `make lightdash`, which sets LAKE_DIR}:${LAKE_DIR}:ro
+    ports:
+      - "${LIGHTDASH_PORT:-8080}:8080"
+
+  db:
+    image: pgvector/pgvector:pg15
+    environment:
+      POSTGRES_PASSWORD: ${PGPASSWORD:-lightdash_local}
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+  minio: # object storage Lightdash needs for query results and exports
+    image: coollabsio/minio:latest
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        minio server /data &
+        until mc alias set local http://localhost:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD" >/dev/null 2>&1; do sleep 1; done
+        mc mb -p local/default >/dev/null 2>&1 || true
+        wait
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD:-minioadmin}
+    volumes:
+      - minio-data:/data
+
+volumes:
+  db-data:
+  minio-data:

@@ -1,0 +1,53 @@
+chartConfig:
+  config:
+    eChartsConfig:
+      series:
+        - encode:
+            xRef:
+              field: fct_mrr_monthly_month_start_month
+            yRef:
+              field: fct_mrr_monthly_mrr
+          type: line
+          yAxisIndex: 0
+      yAxis:
+        - name: MRR (USD)
+    layout:
+      showIncompletePeriod: true
+      xField: fct_mrr_monthly_month_start_month
+      yField:
+        - fct_mrr_monthly_mrr
+  type: cartesian
+contentType: chart
+description: "Month-end MRR snapshot. Always read by month: MRR is a balance, not a flow."
+metricQuery:
+  additionalMetrics: []
+  customDimensions: []
+  dimensions:
+    - fct_mrr_monthly_month_start_month
+  exploreName: fct_mrr_monthly
+  filters: {}
+  limit: 500
+  metricOverrides:
+    fct_mrr_monthly_mrr:
+      formatOptions:
+        currency: USD
+        round: 0
+        separator: default
+        type: currency
+  metrics:
+    - fct_mrr_monthly_mrr
+  sorts:
+    - descending: false
+      fieldId: fct_mrr_monthly_month_start_month
+  tableCalculations: []
+  timezone: project_timezone
+name: MRR by month
+slug: mrr-by-month
+spaceSlug: matchday-analytics
+tableConfig:
+  columnOrder:
+    - fct_mrr_monthly_month_start_month
+    - fct_mrr_monthly_mrr
+tableName: fct_mrr_monthly
+verification: null
+version: 1
