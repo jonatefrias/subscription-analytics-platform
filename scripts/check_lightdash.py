@@ -38,7 +38,7 @@ PAIRS = {  # Lightdash metric -> rpt_mrr_bridge column
     "mrr": "closing_mrr_usd",
     "paying_customers": "closing_customers",
     "logo_churn_rate": "logo_churn_rate",
-    "gross_mrr_churn_rate": None,  # churn plus contraction over opening MRR; derived below
+    "gross_mrr_churn_rate": "gross_mrr_churn_rate",
     "arpu": "arpu_usd",
 }
 
@@ -107,12 +107,8 @@ def main() -> int:
         errors.append(f"months differ: Lightdash has {len(served)}, rpt_mrr_bridge has {len(bridge)}")
     for month in sorted(set(served) & set(bridge)):
         for metric, column in PAIRS.items():
-            mart = bridge[month]
-            if column is None:
-                lost = float(mart["churned_mrr_usd"] + mart["contraction_mrr_usd"])
-                expected = -lost / float(mart["opening_mrr_usd"]) if mart["opening_mrr_usd"] else None
-            else:
-                expected = None if mart[column] is None else float(mart[column])
+            expected = bridge[month][column]
+            expected = None if expected is None else float(expected)
             if not close(served[month][metric], expected):
                 errors.append(f"{month} {metric}: Lightdash {served[month][metric]} != mart {expected}")
 
