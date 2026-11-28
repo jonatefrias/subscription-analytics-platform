@@ -187,3 +187,27 @@ returns no value, because opening customers is a snapshot and has no meaning wit
 report asks for the months and combines them as a ratio of sums. Charts are inline SVG written by a
 small helper instead of a JavaScript library, which keeps the pages self-contained and the build
 free of a front-end toolchain; the trade-off is fewer chart types and simple hover tooltips only.
+
+## 32. Lightdash reads a published copy of the marts, not the build database
+Lightdash connects to DuckDB through MotherDuck or DuckLake, not through a plain database file, and
+DuckLake does not accept the primary-key constraints the contracted marts declare. So the project
+keeps building and testing in DuckDB, and `scripts/export_lake.py` publishes the finished marts to a
+local DuckLake (a catalog file plus Parquet) that the Lightdash container mounts read-only. The
+`lightdash` dbt target exists so the CLI compiles relation names against that lake; nothing is built
+through it. MotherDuck would be less plumbing, but it needs an account, and a reviewer should be able
+to run `make lightdash` with nothing but Docker. Only seven marts, tagged `lightdash`, become
+explores: staging and intermediate models are not for self-service.
+
+## 33. One definition per metric, including in the BI tool
+Lightdash has its own metric layer, which is how a project ends up with two definitions of churn.
+Here the MetricFlow metrics are the source: Lightdash translates all 30 on deploy, and native
+Lightdash metrics are written only where MetricFlow has none. `scripts/check_lightdash.py` holds the
+translation to the same standard as decision 15, through the Lightdash API. Two things did not
+survive translation:
+- `fill_nulls_with` is not carried over, so a filtered flow metric returned null in a month without
+  that movement, and the derived gross churn rate became null with it. The movement condition now
+  lives inside the measure (`case when movement_type = 'churn' then ... else 0 end`) instead of in a
+  metric-level filter. Both engines return 0, and the semantic-layer check still passes.
+- `non_additive_dimension` has no equivalent: Lightdash would sum month-end MRR across a quarter.
+  The MRR explore therefore offers the month as its only time grain, and the check fails if another
+  grain appears. Removing the date altogether still sums snapshots; the dashboard says so.

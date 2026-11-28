@@ -1,0 +1,89 @@
+contentType: dashboard
+description: >-
+  What each channel costs and converts, the web funnel, and the paywall A/B
+  test.
+filters:
+  dimensions: []
+  metrics: []
+  tableCalculations: []
+name: Acquisition and experiment
+ownerEmail: demo@matchday.example
+slug: acquisition-and-experiment
+spaceSlug: matchday-analytics
+tabs: []
+tiles:
+  - h: 7
+    properties:
+      chartName: Signups by month
+      chartSlug: signups-by-month
+      hideTitle: false
+      title: ""
+    tabSlug: null
+    tileSlug: signups-by-month
+    type: saved_chart
+    w: 18
+    x: 0
+    "y": 0
+  - h: 7
+    properties:
+      chartName: CAC by paid channel
+      chartSlug: cac-by-channel
+      hideTitle: false
+      title: ""
+    tabSlug: null
+    tileSlug: cac-by-channel
+    type: saved_chart
+    w: 18
+    x: 18
+    "y": 0
+  - h: 7
+    properties:
+      chartName: Trial conversion by channel
+      chartSlug: trial-conversion-by-channel
+      hideTitle: false
+      title: ""
+    tabSlug: null
+    tileSlug: trial-conversion-by-channel
+    type: saved_chart
+    w: 18
+    x: 0
+    "y": 7
+  - h: 7
+    properties:
+      chartName: Web funnel by channel
+      chartSlug: web-funnel-by-channel
+      hideTitle: false
+      title: ""
+    tabSlug: null
+    tileSlug: web-funnel-by-channel
+    type: saved_chart
+    w: 18
+    x: 18
+    "y": 7
+  - h: 5
+    properties:
+      chartName: Paywall experiment by variant
+      chartSlug: paywall-experiment-by-variant
+      hideTitle: false
+      title: ""
+    tabSlug: null
+    tileSlug: paywall-experiment-by-variant
+    type: saved_chart
+    w: 24
+    x: 0
+    "y": 14
+  - h: 5
+    properties:
+      content: >-
+        This table shows point estimates. The decision (ship the annual
+        highlight) rests on **180-day revenue with confidence intervals**, in
+        `notebooks/paywall_experiment_readout.ipynb`.
+      hideFrame: false
+      title: About the experiment
+    tabSlug: null
+    type: markdown
+    w: 12
+    x: 24
+    "y": 14
+verification: null
+version: 1

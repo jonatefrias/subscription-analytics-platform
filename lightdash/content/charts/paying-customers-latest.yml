@@ -1,0 +1,38 @@
+chartConfig:
+  config:
+    label: Paying customers
+    selectedField: fct_mrr_monthly_paying_customers
+  type: big_number
+contentType: chart
+description: Paying customers at the end of the latest month.
+metricQuery:
+  additionalMetrics: []
+  customDimensions: []
+  dimensions:
+    - fct_mrr_monthly_month_start_month
+  exploreName: fct_mrr_monthly
+  filters: {}
+  limit: 1
+  metricOverrides:
+    fct_mrr_monthly_paying_customers:
+      formatOptions:
+        round: 0
+        separator: default
+        type: number
+  metrics:
+    - fct_mrr_monthly_paying_customers
+  sorts:
+    - descending: true
+      fieldId: fct_mrr_monthly_month_start_month
+  tableCalculations: []
+  timezone: project_timezone
+name: Paying customers
+slug: paying-customers-latest
+spaceSlug: matchday-analytics
+tableConfig:
+  columnOrder:
+    - fct_mrr_monthly_month_start_month
+    - fct_mrr_monthly_paying_customers
+tableName: fct_mrr_monthly
+verification: null
+version: 1

@@ -56,6 +56,24 @@ semantic_models:
       # Flows: additive over time.
       - name: mrr_change_usd
         agg: sum
+      # One measure per movement, with the condition inside the aggregation. A metric-level filter
+      # returns null (not 0) in a month without that movement, and consumers that translate these
+      # definitions without `fill_nulls_with` (Lightdash) would then lose every derived metric too.
+      - name: new_mrr_usd
+        agg: sum
+        expr: "case when movement_type = 'new' then mrr_change_usd else 0 end"
+      - name: reactivation_mrr_usd
+        agg: sum
+        expr: "case when movement_type = 'reactivation' then mrr_change_usd else 0 end"
+      - name: expansion_mrr_usd
+        agg: sum
+        expr: "case when movement_type = 'expansion' then mrr_change_usd else 0 end"
+      - name: contraction_mrr_usd
+        agg: sum
+        expr: "case when movement_type = 'contraction' then mrr_change_usd else 0 end"
+      - name: churned_mrr_usd
+        agg: sum
+        expr: "case when movement_type = 'churn' then mrr_change_usd else 0 end"
       - name: churned_customers
         agg: sum
         expr: "case when movement_type = 'churn' then 1 else 0 end"

@@ -23,8 +23,8 @@ jobs:
       - run: pip install -r requirements.txt
       - name: ruff (Python)
         run: |
-          ruff check generator scripts orchestration semantic_agent analysis reports notebooks tests
-          ruff format --check generator scripts orchestration semantic_agent analysis reports notebooks tests
+          ruff check generator scripts orchestration semantic_agent analysis reports lightdash notebooks tests
+          ruff format --check generator scripts orchestration semantic_agent analysis reports lightdash notebooks tests
       - name: sqlfluff (SQL, rendered through dbt)
         working-directory: transform
         run: |
@@ -67,6 +67,17 @@ jobs:
 
       - name: Build the HTML reports
         run: python reports/build.py --out /tmp/site
+
+      # No Lightdash server in CI: this proves the explores compile, every MetricFlow metric
+      # translates, and the charts and dashboards kept as code match Lightdash's schemas.
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+      - name: Compile the Lightdash project and lint its content
+        run: |
+          python scripts/export_lake.py
+          lightdash/cli.sh compile --project-dir . --profiles-dir . --target lightdash --select tag:lightdash --no-partial-compilation
+          lightdash/cli.sh lint --path ../lightdash/content
 
   pr-review:
     name: Impact report and AI review

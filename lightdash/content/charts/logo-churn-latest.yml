@@ -1,0 +1,38 @@
+chartConfig:
+  config:
+    label: Logo churn, latest month
+    selectedField: fct_mrr_monthly_logo_churn_rate
+  type: big_number
+contentType: chart
+description: Customers lost in the latest month over paying customers at its start.
+metricQuery:
+  additionalMetrics: []
+  customDimensions: []
+  dimensions:
+    - fct_mrr_monthly_month_start_month
+  exploreName: fct_mrr_monthly
+  filters: {}
+  limit: 1
+  metricOverrides:
+    fct_mrr_monthly_logo_churn_rate:
+      formatOptions:
+        round: 1
+        separator: default
+        type: percent
+  metrics:
+    - fct_mrr_monthly_logo_churn_rate
+  sorts:
+    - descending: true
+      fieldId: fct_mrr_monthly_month_start_month
+  tableCalculations: []
+  timezone: project_timezone
+name: Logo churn
+slug: logo-churn-latest
+spaceSlug: matchday-analytics
+tableConfig:
+  columnOrder:
+    - fct_mrr_monthly_month_start_month
+    - fct_mrr_monthly_logo_churn_rate
+tableName: fct_mrr_monthly
+verification: null
+version: 1

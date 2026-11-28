@@ -1,0 +1,11 @@
+access:
+  groups: []
+  inheritParentPermissions: false
+  projectMemberAccessRole: null
+  users:
+    - email: demo@matchday.example
+      role: admin
+contentType: space
+slug: matchday-analytics
+spaceName: Matchday analytics
+version: 1

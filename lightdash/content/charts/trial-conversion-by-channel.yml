@@ -1,0 +1,51 @@
+chartConfig:
+  config:
+    eChartsConfig:
+      series:
+        - encode:
+            xRef:
+              field: dim_customers_acquisition_channel
+            yRef:
+              field: dim_customers_trial_conversion_rate
+          type: bar
+          yAxisIndex: 0
+    layout:
+      flipAxes: true
+      showIncompletePeriod: true
+      xField: dim_customers_acquisition_channel
+      yField:
+        - dim_customers_trial_conversion_rate
+  type: cartesian
+contentType: chart
+description: Trials with a successful charge within 14 days, by CRM acquisition channel.
+metricQuery:
+  additionalMetrics: []
+  customDimensions: []
+  dimensions:
+    - dim_customers_acquisition_channel
+  exploreName: dim_customers
+  filters: {}
+  limit: 500
+  metricOverrides:
+    dim_customers_trial_conversion_rate:
+      formatOptions:
+        round: 1
+        separator: default
+        type: percent
+  metrics:
+    - dim_customers_trial_conversion_rate
+  sorts:
+    - descending: true
+      fieldId: dim_customers_trial_conversion_rate
+  tableCalculations: []
+  timezone: project_timezone
+name: Trial conversion by channel
+slug: trial-conversion-by-channel
+spaceSlug: matchday-analytics
+tableConfig:
+  columnOrder:
+    - dim_customers_acquisition_channel
+    - dim_customers_trial_conversion_rate
+tableName: dim_customers
+verification: null
+version: 1

@@ -22,6 +22,7 @@ models:
       `status_as_of` is the commercial status at the reporting cut-off.
     config:
       contract: {enforced: true}
+      tags: [lightdash]
     columns:
       - name: customer_id
         data_type: varchar

@@ -10,3 +10,5 @@ logs/
 .DS_Store
 .tmp_dagster_home*/
 .dagster/
+lightdash/.env
+.lightdash-metadata.json

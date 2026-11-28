@@ -2,9 +2,10 @@
 PY      := .venv/bin/python
 DBT     := cd transform && DBT_PROFILES_DIR=. ../.venv/bin/dbt
 SCALE   ?= 1.0
-PY_SRC  := generator scripts orchestration semantic_agent analysis reports notebooks tests
+PY_SRC  := generator scripts orchestration semantic_agent analysis reports lightdash notebooks tests
+COMPOSE := LAKE_DIR=$(CURDIR)/data/lake docker compose -f lightdash/docker-compose.yml
 
-.PHONY: setup data deps build test metrics orchestrate test-orchestration lint review readout reports docs clean
+.PHONY: setup data deps build test metrics orchestrate test-orchestration lint review readout reports lightdash lightdash-check lightdash-down lightdash-reset docs clean
 
 setup:            ## create the virtualenv and install pinned dependencies
 	python3.11 -m venv .venv && .venv/bin/pip install -q -r requirements.txt
@@ -42,6 +43,22 @@ readout:          ## re-run the experiment readout notebook against the local wa
 
 reports:          ## build the static HTML reports into site/ (open site/index.html)
 	$(PY) reports/build.py --out site
+
+lightdash:        ## start a local Lightdash on the marts and deploy metrics and dashboards (needs Docker and Node; http://localhost:8080)
+	-$(COMPOSE) stop lightdash
+	$(PY) scripts/export_lake.py
+	$(COMPOSE) up -d
+	$(PY) lightdash/setup.py
+
+lightdash-check:  ## reconcile the metrics Lightdash serves with the marts
+	$(PY) scripts/check_lightdash.py
+
+lightdash-down:   ## stop the Lightdash containers and keep their data
+	$(COMPOSE) down
+
+lightdash-reset:  ## stop Lightdash and delete its database and local credentials
+	$(COMPOSE) down -v
+	rm -f lightdash/.env
 
 docs:             ## generate and serve the dbt docs site
 	$(DBT) docs generate && $(DBT) docs serve

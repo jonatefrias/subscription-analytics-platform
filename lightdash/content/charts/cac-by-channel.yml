@@ -1,0 +1,78 @@
+chartConfig:
+  config:
+    eChartsConfig:
+      series:
+        - encode:
+            xRef:
+              field: fct_acquisition_daily_acquisition_channel
+            yRef:
+              field: fct_acquisition_daily_cac
+          type: bar
+          yAxisIndex: 0
+    layout:
+      flipAxes: true
+      showIncompletePeriod: true
+      xField: fct_acquisition_daily_acquisition_channel
+      yField:
+        - fct_acquisition_daily_cac
+  type: cartesian
+contentType: chart
+description: Paid media spend over customers who went on to pay.
+metricQuery:
+  additionalMetrics: []
+  customDimensions: []
+  dimensions:
+    - fct_acquisition_daily_acquisition_channel
+  exploreName: fct_acquisition_daily
+  filters:
+    dimensions:
+      and:
+        - id: cac-paid
+          operator: equals
+          target:
+            fieldId: fct_acquisition_daily_acquisition_channel
+          values:
+            - paid_social
+            - paid_search
+            - partner
+      id: cac-root
+  limit: 500
+  metricOverrides:
+    fct_acquisition_daily_cac:
+      formatOptions:
+        currency: USD
+        round: 2
+        separator: default
+        type: currency
+    fct_acquisition_daily_marketing_spend:
+      formatOptions:
+        currency: USD
+        round: 0
+        separator: default
+        type: currency
+    fct_acquisition_daily_paying_customers_acquired:
+      formatOptions:
+        round: 0
+        separator: default
+        type: number
+  metrics:
+    - fct_acquisition_daily_cac
+    - fct_acquisition_daily_marketing_spend
+    - fct_acquisition_daily_paying_customers_acquired
+  sorts:
+    - descending: true
+      fieldId: fct_acquisition_daily_cac
+  tableCalculations: []
+  timezone: project_timezone
+name: CAC by paid channel
+slug: cac-by-channel
+spaceSlug: matchday-analytics
+tableConfig:
+  columnOrder:
+    - fct_acquisition_daily_acquisition_channel
+    - fct_acquisition_daily_cac
+    - fct_acquisition_daily_marketing_spend
+    - fct_acquisition_daily_paying_customers_acquired
+tableName: fct_acquisition_daily
+verification: null
+version: 1

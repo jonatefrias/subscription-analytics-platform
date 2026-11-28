@@ -1,0 +1,50 @@
+chartConfig:
+  config:
+    eChartsConfig:
+      series:
+        - encode:
+            xRef:
+              field: dim_customers_created_at_month
+            yRef:
+              field: dim_customers_signups
+          type: bar
+          yAxisIndex: 0
+    layout:
+      showIncompletePeriod: true
+      xField: dim_customers_created_at_month
+      yField:
+        - dim_customers_signups
+  type: cartesian
+contentType: chart
+description: Customers created per month (CRM).
+metricQuery:
+  additionalMetrics: []
+  customDimensions: []
+  dimensions:
+    - dim_customers_created_at_month
+  exploreName: dim_customers
+  filters: {}
+  limit: 500
+  metricOverrides:
+    dim_customers_signups:
+      formatOptions:
+        round: 0
+        separator: default
+        type: number
+  metrics:
+    - dim_customers_signups
+  sorts:
+    - descending: false
+      fieldId: dim_customers_created_at_month
+  tableCalculations: []
+  timezone: project_timezone
+name: Signups by month
+slug: signups-by-month
+spaceSlug: matchday-analytics
+tableConfig:
+  columnOrder:
+    - dim_customers_created_at_month
+    - dim_customers_signups
+tableName: dim_customers
+verification: null
+version: 1

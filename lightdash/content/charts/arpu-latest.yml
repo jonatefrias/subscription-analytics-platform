@@ -1,0 +1,39 @@
+chartConfig:
+  config:
+    label: ARPU per month
+    selectedField: fct_mrr_monthly_arpu
+  type: big_number
+contentType: chart
+description: MRR per paying customer in the latest month.
+metricQuery:
+  additionalMetrics: []
+  customDimensions: []
+  dimensions:
+    - fct_mrr_monthly_month_start_month
+  exploreName: fct_mrr_monthly
+  filters: {}
+  limit: 1
+  metricOverrides:
+    fct_mrr_monthly_arpu:
+      formatOptions:
+        currency: USD
+        round: 2
+        separator: default
+        type: currency
+  metrics:
+    - fct_mrr_monthly_arpu
+  sorts:
+    - descending: true
+      fieldId: fct_mrr_monthly_month_start_month
+  tableCalculations: []
+  timezone: project_timezone
+name: ARPU
+slug: arpu-latest
+spaceSlug: matchday-analytics
+tableConfig:
+  columnOrder:
+    - fct_mrr_monthly_month_start_month
+    - fct_mrr_monthly_arpu
+tableName: fct_mrr_monthly
+verification: null
+version: 1

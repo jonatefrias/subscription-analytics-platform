@@ -1,0 +1,65 @@
+chartConfig:
+  config:
+    eChartsConfig:
+      series:
+        - encode:
+            xRef:
+              field: fct_mrr_monthly_month_start_month
+            yRef:
+              field: fct_mrr_monthly_logo_churn_rate
+          type: line
+          yAxisIndex: 0
+        - encode:
+            xRef:
+              field: fct_mrr_monthly_month_start_month
+            yRef:
+              field: fct_mrr_monthly_gross_mrr_churn_rate
+          type: line
+          yAxisIndex: 0
+    layout:
+      showIncompletePeriod: true
+      xField: fct_mrr_monthly_month_start_month
+      yField:
+        - fct_mrr_monthly_logo_churn_rate
+        - fct_mrr_monthly_gross_mrr_churn_rate
+  type: cartesian
+contentType: chart
+description: Logo churn and gross MRR churn. A cancellation counts when access ends.
+metricQuery:
+  additionalMetrics: []
+  customDimensions: []
+  dimensions:
+    - fct_mrr_monthly_month_start_month
+  exploreName: fct_mrr_monthly
+  filters: {}
+  limit: 500
+  metricOverrides:
+    fct_mrr_monthly_gross_mrr_churn_rate:
+      formatOptions:
+        round: 1
+        separator: default
+        type: percent
+    fct_mrr_monthly_logo_churn_rate:
+      formatOptions:
+        round: 1
+        separator: default
+        type: percent
+  metrics:
+    - fct_mrr_monthly_logo_churn_rate
+    - fct_mrr_monthly_gross_mrr_churn_rate
+  sorts:
+    - descending: false
+      fieldId: fct_mrr_monthly_month_start_month
+  tableCalculations: []
+  timezone: project_timezone
+name: Churn rates by month
+slug: churn-rates-by-month
+spaceSlug: matchday-analytics
+tableConfig:
+  columnOrder:
+    - fct_mrr_monthly_month_start_month
+    - fct_mrr_monthly_logo_churn_rate
+    - fct_mrr_monthly_gross_mrr_churn_rate
+tableName: fct_mrr_monthly
+verification: null
+version: 1

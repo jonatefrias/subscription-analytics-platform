@@ -26,10 +26,9 @@ metrics:
     type: simple
     type_params:
       measure:
-        name: mrr_change_usd
+        name: new_mrr_usd
         fill_nulls_with: 0
         join_to_timespine: false
-    filter: "{{ Dimension('customer_month__movement_type') }} = 'new'"
 
   - name: reactivation_mrr
     label: Reactivation MRR (USD)
@@ -37,10 +36,9 @@ metrics:
     type: simple
     type_params:
       measure:
-        name: mrr_change_usd
+        name: reactivation_mrr_usd
         fill_nulls_with: 0
         join_to_timespine: false
-    filter: "{{ Dimension('customer_month__movement_type') }} = 'reactivation'"
 
   - name: expansion_mrr
     label: Expansion MRR (USD)
@@ -48,10 +46,9 @@ metrics:
     type: simple
     type_params:
       measure:
-        name: mrr_change_usd
+        name: expansion_mrr_usd
         fill_nulls_with: 0
         join_to_timespine: false
-    filter: "{{ Dimension('customer_month__movement_type') }} = 'expansion'"
 
   - name: contraction_mrr
     label: Contraction MRR (USD, negative)
@@ -59,10 +56,9 @@ metrics:
     type: simple
     type_params:
       measure:
-        name: mrr_change_usd
+        name: contraction_mrr_usd
         fill_nulls_with: 0
         join_to_timespine: false
-    filter: "{{ Dimension('customer_month__movement_type') }} = 'contraction'"
 
   - name: churned_mrr
     label: Churned MRR (USD, negative)
@@ -70,10 +66,9 @@ metrics:
     type: simple
     type_params:
       measure:
-        name: mrr_change_usd
+        name: churned_mrr_usd
         fill_nulls_with: 0
         join_to_timespine: false
-    filter: "{{ Dimension('customer_month__movement_type') }} = 'churn'"
 
   - name: net_new_mrr
     label: Net new MRR (USD)

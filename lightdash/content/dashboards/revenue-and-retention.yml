@@ -1,0 +1,141 @@
+contentType: dashboard
+description: >-
+  MRR, its movements, churn and paying retention. Metrics come from the dbt
+  semantic layer.
+filters:
+  dimensions: []
+  metrics: []
+  tableCalculations: []
+name: Revenue and retention
+ownerEmail: demo@matchday.example
+slug: revenue-and-retention
+spaceSlug: matchday-analytics
+tabs: []
+tiles:
+  - h: 3
+    properties:
+      chartName: MRR
+      chartSlug: mrr-latest
+      hideTitle: false
+      title: ""
+    tabSlug: null
+    tileSlug: mrr-latest
+    type: saved_chart
+    w: 9
+    x: 0
+    "y": 0
+  - h: 3
+    properties:
+      chartName: Paying customers
+      chartSlug: paying-customers-latest
+      hideTitle: false
+      title: ""
+    tabSlug: null
+    tileSlug: paying-customers-latest
+    type: saved_chart
+    w: 9
+    x: 9
+    "y": 0
+  - h: 3
+    properties:
+      chartName: ARPU
+      chartSlug: arpu-latest
+      hideTitle: false
+      title: ""
+    tabSlug: null
+    tileSlug: arpu-latest
+    type: saved_chart
+    w: 9
+    x: 18
+    "y": 0
+  - h: 3
+    properties:
+      chartName: Logo churn
+      chartSlug: logo-churn-latest
+      hideTitle: false
+      title: ""
+    tabSlug: null
+    tileSlug: logo-churn-latest
+    type: saved_chart
+    w: 9
+    x: 27
+    "y": 0
+  - h: 7
+    properties:
+      chartName: MRR by month
+      chartSlug: mrr-by-month
+      hideTitle: false
+      title: ""
+    tabSlug: null
+    tileSlug: mrr-by-month
+    type: saved_chart
+    w: 18
+    x: 0
+    "y": 3
+  - h: 7
+    properties:
+      chartName: MRR movements by month
+      chartSlug: mrr-movements
+      hideTitle: false
+      title: ""
+    tabSlug: null
+    tileSlug: mrr-movements
+    type: saved_chart
+    w: 18
+    x: 18
+    "y": 3
+  - h: 7
+    properties:
+      chartName: Churn rates by month
+      chartSlug: churn-rates-by-month
+      hideTitle: false
+      title: ""
+    tabSlug: null
+    tileSlug: churn-rates-by-month
+    type: saved_chart
+    w: 18
+    x: 0
+    "y": 10
+  - h: 7
+    properties:
+      chartName: Paying retention curve
+      chartSlug: retention-curve
+      hideTitle: false
+      title: ""
+    tabSlug: null
+    tileSlug: retention-curve
+    type: saved_chart
+    w: 18
+    x: 18
+    "y": 10
+  - h: 7
+    properties:
+      chartName: MRR by market
+      chartSlug: mrr-by-market
+      hideTitle: false
+      title: ""
+    tabSlug: null
+    tileSlug: mrr-by-market
+    type: saved_chart
+    w: 24
+    x: 0
+    "y": 17
+  - h: 7
+    properties:
+      content: >-
+        MRR and paying customers are **month-end snapshots**, so the only time
+        grain offered is the month.
+
+
+        Every metric here is defined once in the dbt semantic layer (MetricFlow)
+        and translated by Lightdash on deploy. A check in the repository
+        reconciles them with the marts.
+      hideFrame: false
+      title: How to read these numbers
+    tabSlug: null
+    type: markdown
+    w: 12
+    x: 24
+    "y": 17
+verification: null
+version: 1

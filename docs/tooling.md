@@ -27,6 +27,7 @@ Versions are pinned in [`requirements.txt`](../requirements.txt).
 | AI | Anthropic API, MCP | Pull-request review, governed analyst access |
 | Analysis | Jupyter (nbconvert), SciPy, Matplotlib | Experiment readout |
 | Reporting | Python-generated HTML and SVG, GitHub Pages | Published analysis reports |
+| BI | Lightdash (self-hosted, Docker Compose), DuckLake | Self-service exploration and dashboards |
 
 ---
 
@@ -376,12 +377,48 @@ experiment), readable without cloning the repository:
 
 ---
 
+## BI
+
+### Lightdash (self-hosted) on a local DuckLake
+
+**What for.** Self-service exploration and dashboards on the marts, for the questions the static
+reports do not answer.
+
+**How.**
+- `make lightdash` publishes the marts to a DuckLake (`scripts/export_lake.py`), starts Lightdash,
+  Postgres and MinIO with Docker Compose, and runs `lightdash/setup.py`: on a fresh instance it
+  creates a local admin and an access token, then deploys the dbt project and uploads the content.
+- Explores come from the dbt YAML: the seven marts tagged `lightdash`, with joins to `dim_customers`
+  declared under `meta`. The MetricFlow metrics are translated by the Lightdash CLI on deploy;
+  native Lightdash metrics cover cohort retention and the experiment.
+- Charts and dashboards live as YAML in `lightdash/content/` (`lightdash download` / `upload`).
+- `scripts/check_lightdash.py` reconciles what the Lightdash API serves with the marts. CI has no
+  Lightdash server, so there it compiles the project with strict compilation and lints the content.
+- Product telemetry is disabled in the Compose file.
+
+**Why this and not something else.**
+- *Metabase or Superset* are the common open-source choices, but their metrics are defined inside
+  the tool, by clicking. Lightdash reads dimensions and metrics from the dbt project, so the BI
+  layer goes through the same pull requests and review as the models.
+- *Looker* works the same way with LookML and is the tool Lightdash is modelled on; it needs a
+  licence.
+- *Lightdash Cloud* removes the Docker setup at a price no portfolio project should pay; the
+  self-hosted edition is MIT-licensed.
+- *MotherDuck instead of DuckLake* is the simpler connection, but it needs an account
+  ([decision 32](decisions.md)).
+
+The cost is the heaviest dependency in the repository: Docker, a 3 GB image published for amd64
+only (emulated on Apple Silicon) and Node for the CLI. That is why it is optional and kept out of
+`make build`.
+
+---
+
 ## Deliberately not here
 
 | Missing | Why |
 |---|---|
-| A BI tool (Looker, Power BI, Tableau, Metabase) | A dashboard would need hosting or a licence to be seen. The static reports cover the reading; the semantic layer is what a BI tool would sit on. |
+| A hosted BI tool (Looker, Power BI, Tableau) | It would need a licence or a hosted account to be seen. Lightdash runs locally for exploration and the static reports cover the public reading. |
 | An ingestion tool (Fivetran, Airbyte, dlt) | There is no external system to extract from; the generator plays that role and the staging layer handles the source quirks an extractor would deliver. |
-| Docker | One `pip install` into a virtualenv reproduces the environment; a container would add a prerequisite without removing one. |
+| Docker for the project itself | One `pip install` into a virtualenv reproduces the environment; a container would add a prerequisite without removing one. Only the optional Lightdash instance uses it. |
 | Streaming (Kafka, Flink) | The business questions are daily and monthly. Late and duplicated events are handled in batch with a lookback window. |
 | A data observability product | dbt tests, Dagster asset checks and freshness policies cover what the project needs at this size. |
