@@ -32,5 +32,6 @@ select
     *,
     closing_mrr_usd / nullif(closing_customers, 0) as arpu_usd,
     cast(churned_customers as numeric(18, 6)) / nullif(opening_customers, 0) as logo_churn_rate,
-    -churned_mrr_usd / nullif(opening_mrr_usd, 0) as gross_mrr_churn_rate
+    -- gross churn counts every dollar lost from the opening base: churn and contraction
+    -(churned_mrr_usd + contraction_mrr_usd) / nullif(opening_mrr_usd, 0) as gross_mrr_churn_rate
 from monthly

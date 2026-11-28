@@ -37,7 +37,7 @@ PAIRS = {  # saved-query metric -> rpt_mrr_bridge column
     "mrr": "closing_mrr_usd",
     "paying_customers": "closing_customers",
     "logo_churn_rate": "logo_churn_rate",
-    "gross_mrr_churn_rate": None,  # no single mart column; checked below
+    "gross_mrr_churn_rate": "gross_mrr_churn_rate",
     "arpu": "arpu_usd",
 }
 
@@ -79,13 +79,7 @@ def main() -> int:
             continue
         for metric, column in PAIRS.items():
             value = num(row[metric])
-            if column is None:
-                expected = None
-                if mart["opening_mrr_usd"]:
-                    lost = float(mart["churned_mrr_usd"] + mart["contraction_mrr_usd"])
-                    expected = -lost / float(mart["opening_mrr_usd"])
-            else:
-                expected = None if mart[column] is None else float(mart[column])
+            expected = None if mart[column] is None else float(mart[column])
             if not close(value, expected, 1e-6):
                 errors.append(f"{month} {metric}: semantic layer {value} vs mart {expected}")
     if len(monthly) != len(bridge):
